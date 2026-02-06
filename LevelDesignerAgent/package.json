@@ -3,8 +3,11 @@
   "private": true,
   "scripts": {
     "build": "pnpm -r build",
+    "build:web": "pnpm --filter @lda/shared build && pnpm --filter @lda/web build",
+    "build:api": "pnpm --filter @lda/shared build && pnpm --filter @lda/api build",
     "build:worker": "pnpm --filter @lda/shared build && pnpm --filter @lda/worker build",
     "dev": "pnpm -r --parallel dev",
+    "start:api": "pnpm --filter @lda/api start",
     "start:worker": "pnpm --filter @lda/worker start",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
