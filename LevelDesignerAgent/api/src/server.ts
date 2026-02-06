@@ -26,10 +26,48 @@ export const buildServer = async () => {
     });
 
     server.get('/health', async () => {
+        let dbStatus = "unknown";
+        let dbError: string | undefined;
+
+        if (process.env.DATABASE_URL) {
+            try {
+                // Quick connectivity check
+                const { Client } = await import("pg");
+                const client = new Client({
+                    connectionString: process.env.DATABASE_URL,
+                    ssl: process.env.DATABASE_URL.includes("localhost") ? false : { rejectUnauthorized: false },
+                });
+                await client.connect();
+
+                // Verify critical tables exist
+                const res = await client.query(`
+                    SELECT 
+                        to_regclass('auth_sessions') as auth,
+                        to_regclass('secrets') as secrets
+                `);
+                await client.end();
+
+                if (res.rows[0].auth && res.rows[0].secrets) {
+                    dbStatus = "ok";
+                } else {
+                    dbStatus = "missing_tables";
+                }
+            } catch (err: any) {
+                dbStatus = "error";
+                dbError = err.message;
+            }
+        } else {
+            dbStatus = "not_configured";
+        }
+
         return {
             status: "ok",
             service: "api",
-            version: APP_VERSION
+            version: APP_VERSION,
+            db: {
+                status: dbStatus,
+                error: dbError
+            }
         };
     });
 
