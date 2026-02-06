@@ -89,3 +89,30 @@ None.
 2. Check logs for Node 22 usage.
 3. `/health` should return 200 OK.
 
+
+### LDA.0.1.2 - Worker Build Fixes
+
+#### Plan
+Address Render worker build failures ("Cannot find module '@lda/shared'") by correctly configuring package exports and build scripts.
+
+#### Files changed
+- [MODIFY] shared/package.json (Added "exports", ensured compiled output)
+- [MODIFY] worker/tsconfig.json (Added "moduleResolution": "Node")
+- [MODIFY] package.json (Added "build:worker", "start:worker")
+- [NEW] notes/lda/LDA.0.1.2.md
+
+#### Mismatches
+None.
+
+#### Limitations
+- Requires `pnpm install` to link workspaces before building filtered packages.
+
+#### How to verify in Repo Mode
+1. `pnpm install`
+2. `pnpm -r build`
+3. `pnpm --filter @lda/worker start`
+
+#### How to verify in Render Mode
+1. `pnpm install`
+2. `pnpm --filter @lda/shared build && pnpm --filter @lda/worker build`
+3. `pnpm --filter @lda/worker start`

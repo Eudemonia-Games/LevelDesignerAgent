@@ -3,6 +3,8 @@
     "compilerOptions": {
         "outDir": "./dist",
         "rootDir": "./src",
+        "moduleResolution": "Node",
+        "module": "CommonJS",
         "noEmit": false,
         "allowImportingTsExtensions": false
     },

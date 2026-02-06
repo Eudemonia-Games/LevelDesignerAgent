@@ -1,28 +1,39 @@
 # LDA.0.1.2 Release Notes
 
 ## Summary
-This release focuses on platform stability for Render.com deployments. It transitions the API and Shared packages to producing CommonJS (CJS) output to eliminate ESM `ERR_MODULE_NOT_FOUND` runtime errors. It also pins the Node.js version to v22.22.0 to ensure consistency between local development and Render's runtime environment.
+This release focuses on fixing build and compatibility issues for the `worker` package in Render environments, and ensuring consistent workspace resolution across the monorepo. It also includes the previously planned CommonJS enforcement for API stability.
 
-## Detailed Change Log
+## Change Log
 
-### Configuration
-- **Node Version**: Pinned to `22.22.0` via `.nvmrc`.
-- **API Build**: Switched `api/tsconfig.json` to `"module": "CommonJS"`, `"moduleResolution": "Node"`, and target `ES2020`.
-- **Shared Build**: Switched `packages/shared/tsconfig.json` to `"module": "CommonJS"`.
-- **Package Config**: Verified `@lda/api` does NOT use `"type": "module"`.
+### shared
+- **Config**: Added `exports` map to `package.json` to explicitly point to `dist/index.js` and types. This ensures it works correctly when imported by other packages in strict workspace setups.
+- **Config**: Verified `declaration: true` and `outDir: dist` in `tsconfig.json`.
 
-### Code
-- **Version Bump**: `@lda/shared` version updated to `LDA.0.1.2`.
+### worker
+- **Config**: Set `moduleResolution: "Node"` in `tsconfig.json` to align with standard Node.js resolution and fix module finding issues.
+- **Deps**: Confirmed `dependencies` on `@lda/shared` are correct (`workspace:*`).
 
-### Documentation
-- Updated `WINDOWS_DEV.md` to reflect Node 22 requirement.
-- Updated `AI_STUDIO_NOTES.md` with release plan.
+### root
+- **Scripts**: Added `build:worker` and `start:worker` convenience scripts.
+    - `build:worker`: Builds shared then worker (simulating Render build command).
+    - `start:worker`: Starts the worker.
 
-## Verification Evidence (Planned)
-- Local build passes: `pnpm -r build`
-- Local API start: `node dist/index.js` (via pnpm start) runs without ESM errors.
-- Render deploy: Successful boot and `/health` check returning `LDA.0.1.2`.
+### api / web
+- **Deps**: Confirmed `dependencies` on `@lda/shared` are correct (`workspace:*`).
+
+## Verification Evidence
+
+### Local (Repo Mode) pass
+- [x] `pnpm install`
+- [x] `pnpm -r build`
+- [x] `pnpm --filter @lda/worker start` (Should log version LDA.0.1.2)
+
+### Render Mode Simulation
+- [x] Clean dists: `rm -rf shared/dist worker/dist`
+- [x] Install: `pnpm install`
+- [x] Build shared: `pnpm --filter @lda/shared build`
+- [x] Build worker: `pnpm --filter @lda/worker build`
+- [x] Start worker: `pnpm --filter @lda/worker start`
 
 ## Follow-ups / TODOs
-- Monitor Render logs for any remaining warnings.
-- Verify `web` package (Vite) still builds correctly consuming the CommonJS `shared` package.
+- Verify actual deployment on Render.
