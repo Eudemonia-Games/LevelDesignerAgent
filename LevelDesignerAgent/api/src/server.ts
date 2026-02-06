@@ -5,6 +5,13 @@ import { APP_VERSION } from '@lda/shared';
 export const buildServer = async () => {
     const server = Fastify();
 
+    try {
+        console.log('DEBUG: APP_VERSION =', APP_VERSION);
+        console.log('DEBUG: @lda/shared path =', require.resolve('@lda/shared'));
+    } catch (e) {
+        console.log('DEBUG: Error resolving path', e);
+    }
+
     await server.register(cors, {
         origin: (origin, cb) => {
             const allowedOrigin = process.env.CORS_ORIGIN;

@@ -116,3 +116,32 @@ None.
 1. `pnpm install`
 2. `pnpm --filter @lda/shared build && pnpm --filter @lda/worker build`
 3. `pnpm --filter @lda/worker start`
+
+
+### LDA.0.3.1 - Web ESM Fix
+
+#### Plan
+Enable dual ESM/CJS build for `@lda/shared` to fix "require is not defined" errors in the Web app while maintaining CJS support for API/Worker.
+
+#### Files changed
+- [MODIFY] shared/package.json (Added "exports", dual build scripts)
+- [NEW] shared/tsconfig.cjs.json, shared/tsconfig.esm.json
+- [MODIFY] shared/src/version.ts (LDA.0.3.1)
+- [NEW] web/public/favicon.ico
+- [NEW] notes/lda/LDA.0.3.1.md
+
+#### Mismatches
+None.
+
+#### Limitations
+- `@lda/shared` now outputs to `dist/esm` and `dist/cjs` instead of root `dist`.
+
+#### How to verify in Repo Mode
+1. `pnpm install`
+2. `pnpm -r build`
+3. `pnpm --filter @lda/web dev` -> Check browser console for errors.
+
+#### How to verify in Render Mode
+1. Redeploy `lda-web`.
+2. Verify UI loads and System Status shows API OK.
+
