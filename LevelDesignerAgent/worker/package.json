@@ -1,0 +1,19 @@
+{
+    "name": "@lda/worker",
+    "version": "0.1.0",
+    "scripts": {
+        "build": "tsc",
+        "dev": "pnpm -C ../shared build && tsx watch src/index.ts",
+        "start": "node dist/index.js",
+        "lint": "eslint src --ext .ts",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@lda/shared": "workspace:*"
+    },
+    "devDependencies": {
+        "tsx": "^4.7.0",
+        "@types/node": "^20.11.0",
+        "typescript": "^5.3.3"
+    }
+}
