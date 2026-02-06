@@ -60,3 +60,32 @@ None.
 ### How to verify in Render Mode
 N/A for LDA.0.1.1
 
+## LDA.0.1.2 - Release Prep (CommonJS + Node 22)
+
+### Plan
+Fix Render runtime failure by enforcing CommonJS output for API and Shared packages, and pinning Node version to 22.22.0 to avoid ESM module loading issues.
+
+### Files changed
+- [NEW] .nvmrc (22.22.0)
+- [MODIFY] api/tsconfig.json (Module: CommonJS, Target: ES2020)
+- [MODIFY] shared/tsconfig.json (Module: CommonJS)
+- [MODIFY] shared/src/version.ts (LDA.0.1.2)
+- [MODIFY] docs/lda/WINDOWS_DEV.md (Node 22 note)
+
+### Mismatches
+None.
+
+### Limitations
+- Shared package now emits CommonJS, which might require changes in `web` (Vite) if it relied on ESM, but Vite handles CJS/ESM interop well.
+
+### How to verify in Repo Mode
+1. Clean: `rm -rf **/dist`
+2. Build: `pnpm -r build`
+3. Start: `pnpm --filter @lda/api start` -> Verify no module errors.
+4. Health: `http://localhost:3001/health` -> LDA.0.1.2
+
+### How to verify in Render Mode
+1. Deploy.
+2. Check logs for Node 22 usage.
+3. `/health` should return 200 OK.
+
