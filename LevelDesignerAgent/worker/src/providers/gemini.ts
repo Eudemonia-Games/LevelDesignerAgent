@@ -13,10 +13,12 @@ export class GeminiProvider implements ProviderAdapter {
 
         // Handle model aliases
         // Handle model aliases / fallbacks
-        let modelId = stage.model_id || 'gemini-1.5-flash';
-        if (modelId === 'gemini-3-flash-preview') {
-            console.warn(`[Gemini] Remapping ${modelId} -> gemini-2.0-flash-exp`);
-            modelId = 'gemini-2.0-flash-exp';
+        let modelId = stage.model_id || 'gemini-2.5-flash-image';
+
+        // Force user's requested model for everything
+        if (modelId.includes('gemini-3') || modelId.includes('gemini-2.0')) {
+            console.warn(`[Gemini] Remapping ${modelId} -> gemini-2.5-flash-image`);
+            modelId = 'gemini-2.5-flash-image';
         }
 
         console.log(`[Gemini] Generating text with ${modelId}... (Prompt length: ${prompt.length})`);
