@@ -49,6 +49,24 @@ export class MeshyProvider implements ProviderAdapter {
 
         if (!apiKey) throw new Error("MESHY_API_KEY not configured (Env or DB Secret)");
 
+        // Resolve image_asset_id if provided
+        if (options.image_asset_id) {
+            try {
+                const { getAssetFileR2Key } = await import('../db/assets');
+                const r2Key = await getAssetFileR2Key(options.image_asset_id);
+                if (r2Key) {
+                    console.log(`[Meshy] Resolving asset ${options.image_asset_id} -> ${r2Key}...`);
+                    const signedUrl = await getSignedDownloadUrl(r2Key, 3600);
+                    options.image_url = signedUrl;
+                    console.log(`[Meshy] Using resolved signed URL for Image-to-3D.`);
+                } else {
+                    console.warn(`[Meshy] Asset ${options.image_asset_id} has no file/key.`);
+                }
+            } catch (err: any) {
+                console.warn(`[Meshy] Failed to resolve asset ID: ${err.message}`);
+            }
+        }
+
         // Parse <GEOMETRY_REF:role> tag
         let finalPrompt = prompt;
         const refMatch = prompt.match(/<GEOMETRY_REF:([\w_]+)>/);

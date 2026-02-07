@@ -51,3 +51,10 @@ export async function createAssetFile(assetId: string, fileData: Buffer | string
 
     return r2Key;
 }
+
+export async function getAssetFileR2Key(assetId: string): Promise<string | null> {
+    const res = await getPool().query(`
+        SELECT r2_key FROM asset_files WHERE asset_id = $1 LIMIT 1
+    `, [assetId]);
+    return res.rows[0]?.r2_key || null;
+}

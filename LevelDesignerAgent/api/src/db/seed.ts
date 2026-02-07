@@ -361,7 +361,7 @@ Requirements:
             "negative_prompt": "blurry, low quality"
         },
         input_bindings_json: {
-            "exterior_prompt": "$.context.S2_ANCHOR_PROMPTS.exterior_image_prompt"
+            "image_asset_id": "$.context.S5_EXTERIOR_ANCHOR_IMAGE.artifacts[0]"
         },
         breakpoint_after: false
     },
@@ -381,6 +381,7 @@ Requirements:
             "negative_prompt": "blurry, low quality, text, watermark"
         },
         input_bindings_json: {
+            "image_asset_id": "$.context.S7_TILE_IMAGES.artifacts[0]",
             "tile_visual_prompt": "$.context.S7_TILE_IMAGES.tile_visual_prompt",
             "tile_geometry_role": "$.context.S7_TILE_IMAGES.tile_geometry_role"
         },
@@ -401,6 +402,7 @@ Requirements:
             "art_style": "realistic"
         },
         input_bindings_json: {
+            "image_asset_id": "$.context.S8_PROP_IMAGES.artifacts[0]",
             "prop_visual_prompt": "$.context.S8_PROP_IMAGES.prop_visual_prompt"
         },
         breakpoint_after: false
@@ -418,6 +420,9 @@ Requirements:
             "target_triangles": 50000,
             "texture_mode": "pbr",
             "art_style": "realistic"
+        },
+        input_bindings_json: {
+            "image_asset_id": "$.context.S9_BOSS_IMAGE.artifacts[0]"
         },
         breakpoint_after: false
     },
