@@ -300,5 +300,25 @@ export const FlowsDb = {
         } finally {
             await client.end();
         }
+    },
+
+    async renameStage(flowId: string, oldKey: string, newKey: string): Promise<void> {
+        const client = await this.getClient();
+        try {
+            const res = await client.query(`
+                UPDATE flow_stage_templates 
+                SET stage_key = $1, updated_at = now()
+                WHERE flow_version_id = $2 AND stage_key = $3
+            `, [newKey, flowId, oldKey]);
+            if (res.rowCount === 0) {
+                // Check if old key exist
+                throw new Error("Stage not found");
+            }
+        } catch (e: any) {
+            if (e.code === '23505') throw new Error("Stage Key already exists");
+            throw e;
+        } finally {
+            await client.end();
+        }
     }
 };

@@ -234,8 +234,8 @@ Return JSON ONLY matching the expected schema (pillar_instances, wall_separator_
         stage_key: 'S5_EXTERIOR_ANCHOR_IMAGE',
         order_index: 50,
         kind: 'image',
-        provider: 'fal',
-        model_id: 'fal-ai/flux-pro/v1.1-ultra', // Using Flux
+        provider: 'gemini',
+        model_id: 'imagen-3.0-generate-001', // Using Gemini (Imagen 3)
         prompt_template: '{{exterior_image_prompt}}',
         input_bindings_json: {
             "exterior_image_prompt": "$.context.S2_ANCHOR_PROMPTS.exterior_image_prompt"
@@ -247,8 +247,8 @@ Return JSON ONLY matching the expected schema (pillar_instances, wall_separator_
         stage_key: 'S6_INTERIOR_STYLE_IMAGE',
         order_index: 60,
         kind: 'image',
-        provider: 'fal',
-        model_id: 'fal-ai/flux-pro/v1.1-ultra',
+        provider: 'gemini',
+        model_id: 'imagen-3.0-generate-001',
         prompt_template: '{{interior_style_image_prompt}}',
         input_bindings_json: {
             "interior_style_image_prompt": "$.context.S2_ANCHOR_PROMPTS.interior_style_image_prompt"
@@ -346,7 +346,7 @@ Requirements:
         stage_key: 'S10_EXTERIOR_3D_MODEL',
         order_index: 100,
         kind: 'model3d',
-        provider: 'rodin', // Fallback meshy
+        provider: 'meshy', // Switched to Meshy
         model_id: '',
         prompt_template: '{{exterior_prompt}}',
         breakpoint_after: false
@@ -371,8 +371,8 @@ Requirements:
         stage_key: 'S12_PROP_3D_MODELS',
         order_index: 120,
         kind: 'model3d',
-        provider: 'rodin',
-        model_id: '',
+        provider: 'meshy',
+        model_id: 'meshy-4',
         prompt_template: '{{prop_visual_prompt}}',
         breakpoint_after: false
     },
@@ -381,8 +381,8 @@ Requirements:
         stage_key: 'S13_BOSS_3D_MODEL',
         order_index: 130,
         kind: 'model3d',
-        provider: 'rodin',
-        model_id: '',
+        provider: 'meshy',
+        model_id: 'meshy-4',
         prompt_template: '{{boss_visual_prompt}}',
         breakpoint_after: false
     },
@@ -409,7 +409,18 @@ Requirements:
 export async function seedDefaults() {
     console.log("🌱 [Seed] Checking seed data...");
 
-    // 1. Check/Seed Default Flow
+    // 1. Cleanup: Delete all flows EXCEPT 'bossroom_default'
+    // This ensures we have a clean slate as requested.
+    const client = await FlowsDb.getClient();
+    try {
+        await client.query("DELETE FROM flow_versions WHERE name != 'bossroom_default'");
+    } catch (e) {
+        console.warn("⚠️ [Seed] Failed to cleanup old flows:", e);
+    } finally {
+        await client.end();
+    }
+
+    // 2. Check/Seed Default Flow
     const flows = await FlowsDb.listFlows();
     let defaultFlow = flows.find(f => f.name === 'bossroom_default' && f.version_major === 0 && f.version_minor === 1 && f.version_patch === 0);
 
@@ -421,7 +432,7 @@ export async function seedDefaults() {
                 version_major: 0,
                 version_minor: 1,
                 version_patch: 0,
-                description: 'Default Boss Room generation flow (Semi-automated)'
+                description: 'Default Boss Room generation flow (Gemini + Meshy)'
             });
             await FlowsDb.publishFlow(defaultFlow.id);
         } catch (e) {
@@ -432,7 +443,7 @@ export async function seedDefaults() {
         console.log("🌱 [Seed] 'bossroom_default' exists.");
     }
 
-    // 2. Check/Seed Default Stages
+    // 3. Check/Seed Default Stages
     if (defaultFlow) {
         const currentStages = await FlowsDb.listStages(defaultFlow.id);
 

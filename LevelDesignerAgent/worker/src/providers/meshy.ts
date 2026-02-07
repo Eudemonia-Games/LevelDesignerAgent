@@ -23,6 +23,25 @@ export class MeshyProvider implements ProviderAdapter {
     }
 
     async generate3D(prompt: string, options: any = {}): Promise<any> {
+        const MAX_RETRIES = 3;
+        const RETRY_DELAY_MS = 5000;
+
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                return await this._generate3DInternal(prompt, options);
+            } catch (err: any) {
+                const isRateLimit = err.message.includes('429');
+                if (isRateLimit && attempt < MAX_RETRIES) {
+                    console.warn(`[Meshy] Rate limit hit. Waiting ${RETRY_DELAY_MS}ms... (Attempt ${attempt}/${MAX_RETRIES})`);
+                    await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+                    continue;
+                }
+                throw err;
+            }
+        }
+    }
+
+    private async _generate3DInternal(prompt: string, options: any = {}): Promise<any> {
         if (!this.apiKey) throw new Error("MESHY_API_KEY not configured");
 
         // Parse <GEOMETRY_REF:role> tag
@@ -39,7 +58,6 @@ export class MeshyProvider implements ProviderAdapter {
                 finalPrompt = prompt.replace(refMatch[0], '').trim();
             } catch (err: any) {
                 console.warn(`[Meshy] Failed to resolve geometry ref for ${role}: ${err.message}`);
-                // Proceed without image, or fail? Proceed for now.
             }
         }
 
@@ -52,9 +70,6 @@ export class MeshyProvider implements ProviderAdapter {
             ...options
         };
 
-        // Switch to Image-to-3D if image_url provided
-        // Note: Meshy API usually separates these. v1/image-to-3d is common, but checking v2 docs (assumed):
-        // If image_url is present, we use the image-to-3d endpoint.
         if (options.image_url) {
             console.log(`[Meshy] Using Image-to-3D with url: ${options.image_url}`);
             url = 'https://api.meshy.ai/v1/image-to-3d';
@@ -63,7 +78,6 @@ export class MeshyProvider implements ProviderAdapter {
                 enable_pbr: true,
                 ...options
             };
-            // Remove text-to-3d specific fields if they are in options
             delete payload.prompt;
             delete payload.mode;
             delete payload.art_style;
@@ -79,6 +93,7 @@ export class MeshyProvider implements ProviderAdapter {
         });
 
         if (!startResp.ok) {
+            if (startResp.status === 429) throw new Error(`Meshy API Rate Limit: 429`);
             throw new Error(`Meshy API Error: ${startResp.statusText} ${await startResp.text()}`);
         }
 
@@ -88,13 +103,10 @@ export class MeshyProvider implements ProviderAdapter {
         // Poll
         let taskData;
         let retries = 0;
-        const maxRetries = 60; // 2 minutes approx
+        const maxRetries = 120; // Increased to 4 minutes for safety
 
         while (retries < maxRetries) {
             await new Promise(r => setTimeout(r, 2000));
-            // Polling endpoint is different for image-to-3d in v1 typically? 
-            // Usually Meshy uses generic task ID lookup or specific endpoint.
-            // As per common pattern, it's often the same or /v1/image-to-3d/{id}.
             const pollUrl = options.image_url
                 ? `https://api.meshy.ai/v1/image-to-3d/${taskId}`
                 : `https://api.meshy.ai/v2/text-to-3d/${taskId}`;

@@ -27,7 +27,8 @@ const UpsertStageSchema = z.object({
     input_bindings_json: z.record(z.any()).optional(),
     provider_config_json: z.record(z.any()).optional(),
     output_schema_json: z.record(z.any()).optional(),
-    breakpoint_after: z.boolean().optional()
+    breakpoint_after: z.boolean().optional(),
+    stage_key: z.string().min(1).regex(/^[A-Z0-9_]+$/, "Stage Key must be uppercase alphanumeric").optional()
 });
 
 const StageKeyParamsSchema = z.object({
@@ -138,9 +139,18 @@ export async function designRoutes(server: FastifyInstance) {
         if (!bodyResult.success) return reply.code(400).send({ error: "Validation failed", details: bodyResult.error.format() });
 
         try {
+            // Handle Renaming first if needed
+            const newKey = bodyResult.data.stage_key;
+            let currentKey = req.params.stageKey;
+
+            if (newKey && newKey !== currentKey) {
+                await FlowsDb.renameStage(req.params.flowId, currentKey, newKey);
+                currentKey = newKey; // Update for upsert lookup
+            }
+
             const stage = await FlowsDb.upsertStage({
                 flow_version_id: req.params.flowId,
-                stage_key: req.params.stageKey,
+                stage_key: currentKey,
                 ...bodyResult.data
             });
             return { stage };
