@@ -70,6 +70,18 @@ export const buildServer = async () => {
     const { adminRoutes } = await import('./routes/admin');
     server.register(adminRoutes);
 
+    const { designRoutes } = await import('./routes/design');
+    server.register(designRoutes);
+
+    const { secretsRoutes } = await import('./routes/secrets');
+    server.register(secretsRoutes);
+
+    // Debug: Log 404s to see what's missing
+    server.setNotFoundHandler((req, reply) => {
+        req.log.warn({ method: req.method, url: req.url }, 'Route not found');
+        reply.code(404).send({ ok: false, error: 'not_found', url: req.url });
+    });
+
     // server.addHook('onReady', async () => {
     //    if (process.env.DATABASE_URL) {
     //        await seedDefaults().catch(err => console.error("Seed failed:", err));
