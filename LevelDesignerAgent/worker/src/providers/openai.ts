@@ -134,23 +134,38 @@ export class OpenAIProvider implements ProviderAdapter {
 
         messages.push({ role: 'user', content: userContent });
 
-        const completion = await clientToUse.chat.completions.create({
-            model: model,
-            messages: messages as any,
-            ...options
-        });
+        try {
+            const completion = await clientToUse.chat.completions.create({
+                model: model,
+                messages: messages as any,
+                ...options
+            });
 
-        const content = completion.choices[0].message.content || '';
+            const content = completion.choices[0].message.content || '';
 
-        let json_data = {};
-        if (content.trim().startsWith('{')) {
-            try { json_data = JSON.parse(content); } catch (e) { }
+            let json_data = {};
+            if (content.trim().startsWith('{')) {
+                try { json_data = JSON.parse(content); } catch (e) { }
+            }
+
+            return {
+                text: content,
+                ...json_data,
+                usage: completion.usage
+            };
+        } catch (err: any) {
+            console.error(`[OpenAI] Request Failed:`, {
+                model,
+                apiKeyName: this.apiKeyName,
+                error: err.message
+            });
+            if (err.status) {
+                console.error(`[OpenAI] Status: ${err.status}`);
+            }
+            if (err.error) {
+                console.error(`[OpenAI] Body:`, JSON.stringify(err.error, null, 2));
+            }
+            throw err;
         }
-
-        return {
-            text: content,
-            ...json_data,
-            usage: completion.usage
-        };
     }
 }
