@@ -112,6 +112,9 @@ export const AuthService = {
         if (dbUrl.includes("channel_binding")) {
             connectionString = dbUrl.replace(/([?&])channel_binding=[^&]+(&|$)/, '$1').replace(/&$/, '');
         }
+        if (connectionString.includes("sslmode")) {
+            connectionString = connectionString.replace(/([?&])sslmode=[^&]+(&|$)/, '$1').replace(/&$/, '');
+        }
 
         const client = new Client({
             connectionString,

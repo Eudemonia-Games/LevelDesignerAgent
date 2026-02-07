@@ -15,6 +15,11 @@ export async function runMigrations() {
         connectionString = dbUrl.replace(/([?&])channel_binding=[^&]+(&|$)/, '$1').replace(/&$/, '');
     }
 
+    if (connectionString.includes("sslmode")) {
+        console.warn("⚠️ [DB] URL contained unsupported param: sslmode (ignored)");
+        connectionString = connectionString.replace(/([?&])sslmode=[^&]+(&|$)/, '$1').replace(/&$/, '');
+    }
+
     // Explicitly NO logging of the URL
     console.log(`db:migrate start`);
 
