@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "scripts": {
         "build": "tsc",
-        "dev": "pnpm -C ../shared build \u0026\u0026 tsx watch src/index.ts",
+        "dev": "pnpm -C ../shared build && tsx watch src/index.ts",
         "start": "node dist/index.js",
         "lint": "eslint src --ext .ts",
         "typecheck": "tsc --noEmit",
@@ -16,7 +16,9 @@
         "@fastify/cookie": "^11.0.2",
         "@fastify/cors": "^11.2.0",
         "@lda/shared": "workspace:*",
+        "@types/archiver": "^7.0.0",
         "adm-zip": "^0.5.16",
+        "archiver": "^7.0.1",
         "bcryptjs": "^3.0.3",
         "dotenv": "^17.2.4",
         "fastify": "^5.7.4",

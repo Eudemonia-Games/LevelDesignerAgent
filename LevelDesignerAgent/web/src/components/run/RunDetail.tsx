@@ -59,6 +59,20 @@ export function RunDetail({ runId, onClose }: RunDetailProps) {
                 <div>
                     Status: <strong>{run.status}</strong> <br />
                     ID: <span style={{ fontFamily: 'monospace' }}>{run.id}</span>
+                    <button style={{
+                        marginLeft: '15px',
+                        background: '#333',
+                        border: '1px solid #555',
+                        color: '#eee',
+                        padding: '4px 8px',
+                        cursor: 'pointer',
+                        borderRadius: '4px',
+                        fontSize: '0.8rem'
+                    }} onClick={() => {
+                        window.open(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/runs/${run.id}/download`, '_blank');
+                    }}>
+                        ⬇️ Download Assets
+                    </button>
                 </div>
                 {run.error_summary && (
                     <div style={{ color: 'red', marginTop: '10px' }}>

@@ -43,7 +43,7 @@ async function createS3Client(): Promise<S3Client> {
     });
 }
 
-function getS3Client(): Promise<S3Client> {
+export function getS3Client(): Promise<S3Client> {
     if (s3Client) return Promise.resolve(s3Client);
     if (!clientPromise) {
         clientPromise = createS3Client().then(c => {

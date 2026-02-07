@@ -116,7 +116,42 @@ export function RunGallery({ onRunClick }: RunGalleryProps) {
                             e.stopPropagation();
                             onRunClick && onRunClick(run.id);
                         }}>
-                            View Details
+                            View
+                        </button>
+                        <button style={{
+                            width: '40px',
+                            background: '#333',
+                            border: 'none',
+                            color: '#aaa',
+                            padding: '8px',
+                            cursor: 'pointer',
+                            borderRadius: '4px'
+                        }} title="Download Assets" onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/runs/${run.id}/download`, '_blank');
+                        }}>
+                            ⬇️
+                        </button>
+                        <button style={{
+                            width: '40px',
+                            background: '#422',
+                            border: 'none',
+                            color: '#d88',
+                            padding: '8px',
+                            cursor: 'pointer',
+                            borderRadius: '4px'
+                        }} title="Delete Run" onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!confirm("Are you sure you want to delete this run? This action cannot be undone.")) return;
+                            try {
+                                await fetchApi(`/api/v1/runs/${run.id}`, { method: 'DELETE' });
+                                // Optimistic update or reload
+                                setRuns(runs.filter(r => r.id !== run.id));
+                            } catch (err: any) {
+                                alert(`Failed to delete: ${err.message}`);
+                            }
+                        }}>
+                            🗑️
                         </button>
                     </div>
                 </div>

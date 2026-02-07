@@ -145,5 +145,15 @@ export const RunsDb = {
         } finally {
             await client.end();
         }
+    },
+
+    async deleteRun(id: string): Promise<boolean> {
+        const client = await this.getClient();
+        try {
+            const res = await client.query("DELETE FROM runs WHERE id = $1", [id]);
+            return (res.rowCount || 0) > 0;
+        } finally {
+            await client.end();
+        }
     }
 };
