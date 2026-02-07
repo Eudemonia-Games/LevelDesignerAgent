@@ -211,26 +211,17 @@ export async function executeRun(run: Run) {
             }
 
             const provider = getProvider(providerName);
-            output = await provider.run(run, nextStage, attempt, context, resolvedPrompt);
-        } catch (e: any) {
-            const msg = e.message.toLowerCase();
-            const shouldFallback =
-                msg.includes('not configured') ||
-                msg.includes('not found') ||
-                msg.includes('404') ||
-                msg.includes('400') ||
-                msg.includes('500') ||
-                msg.includes('generatecontent') || // Specific to Gemini misuse 
-                msg.includes('fetch failed');
 
-            if (shouldFallback) {
-                // Fallback to stub if provider missing/unconfigured or API error
-                await emitRunEvent(run.id, 'warn', `Provider ${nextStage.provider} failed: ${e.message}. Falling back to STUB.`);
-                const { generateStubOutput } = await import('./stubs');
-                output = generateStubOutput(run, nextStage, attempt);
-            } else {
-                throw e;
-            }
+            // Pass secrets and other meta options
+            const providerContext = {
+                ...context,
+                _secrets: secretsMap
+            };
+
+            output = await provider.run(run, nextStage, attempt, providerContext, resolvedPrompt);
+        } catch (e: any) {
+            // NO STUBS. Fail Hard.
+            throw e;
         }
 
 

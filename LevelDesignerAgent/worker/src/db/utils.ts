@@ -12,6 +12,11 @@ export const getDbConfig = (dbUrl: string): ClientConfig => {
         connectionString = dbUrl.replace(/([?&])channel_binding=[^&]+(&|$)/, '$1').replace(/&$/, '');
     }
 
+    // Also strip sslmode=... to avoid "parameter absent" warnings when we manually set ssl config below
+    if (connectionString.includes("sslmode")) {
+        connectionString = connectionString.replace(/([?&])sslmode=[^&]+(&|$)/, '$1').replace(/&$/, '');
+    }
+
     const isLocalhost = connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
 
     return {

@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+
 import { ProviderAdapter, ProviderOutput } from './index';
 import { FlowStageTemplate, Run } from '../db/types';
 
@@ -9,52 +9,73 @@ export class NanoBananaProvider implements ProviderAdapter {
             throw new Error("GEMINI_API_KEY not found in secrets");
         }
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-
-        // User requested "gemini 2.5 flash image", likely meaning the latest flash model capable of images.
-        // gemini-2.0-flash-exp is the current robust preview.
-        const modelId = stage.model_id || 'gemini-2.5-flash-image';
-        const model = genAI.getGenerativeModel({ model: modelId });
+        // Map models to latest valid ones
+        let modelId = stage.model_id || 'gemini-2.5-flash-image';
+        if (modelId === 'gemini-2.0-flash-exp') {
+            modelId = 'gemini-2.5-flash-image';
+        }
 
         console.log(`[NanoBanana] Generating content with ${modelId}...`);
 
         try {
-            const result = await model.generateContent({
-                contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{
+                    parts: [{ text: prompt }]
+                }],
+                generationConfig: {
+                    responseModalities: ["image"],
+                    imageConfig: {
+                        aspectRatio: "16:9"
+                    }
+                }
+            };
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
 
-            const response = await result.response;
-            const candidates = response.candidates;
-
-            if (!candidates || candidates.length === 0) {
-                throw new Error("No candidates returned");
+            if (!response.ok) {
+                const errText = await response.text();
+                // If 404, might be model fallback?
+                if (response.status === 404 && modelId !== 'gemini-2.5-flash-image') {
+                    console.warn(`[NanoBanana] ${modelId} not found, falling back to gemini-2.5-flash-image`);
+                    // Simple retry with fallback:
+                    return this.run(_run, { ...stage, model_id: 'gemini-2.5-flash-image' }, _attempt, context, prompt);
+                }
+                throw new Error(`Gemini REST Error ${response.status}: ${errText}`);
             }
 
-            const parts = candidates[0].content.parts;
+            const data: any = await response.json();
+
+            // Extract images
             const artifacts: any[] = [];
 
-            for (const part of parts) {
-                if (part.inlineData) {
-                    // It's an image
-                    const base64 = part.inlineData.data;
-
-                    artifacts.push({
-                        kind: 'image',
-                        slug: `image_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-                        data: Buffer.from(base64, 'base64')
-                    });
+            // Response format: candidates[0].content.parts[].inlineData (or executableCode etc)
+            const candidates = data.candidates;
+            if (candidates && candidates.length > 0) {
+                const parts = candidates[0].content?.parts || [];
+                for (const part of parts) {
+                    if (part.inlineData && part.inlineData.mimeType.startsWith('image')) {
+                        artifacts.push({
+                            kind: 'image',
+                            slug: `image_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+                            data: Buffer.from(part.inlineData.data, 'base64')
+                        });
+                    }
                 }
             }
 
-            // Fallback: If no inline images, check if it returned text (maybe an error or refusal)
             if (artifacts.length === 0) {
-                const text = response.text();
-                throw new Error(`No images generated. Output text: ${text}`);
+                throw new Error(`No image parts found in response: ${JSON.stringify(data).substring(0, 200)}`);
             }
 
             return {
                 _artifacts: artifacts,
-                summary: "Image generated successfully via Gemini SDK"
+                summary: `Image generated via ${modelId}`
             };
 
         } catch (e: any) {

@@ -4,7 +4,6 @@ import { getSignedDownloadUrl } from '../storage/r2';
 
 export class MeshyProvider implements ProviderAdapter {
     private apiKey: string | undefined;
-    // ...
 
     private static instance: MeshyProvider | null = null;
 
@@ -23,6 +22,10 @@ export class MeshyProvider implements ProviderAdapter {
     }
 
     async generate3D(prompt: string, options: any = {}): Promise<any> {
+        // Updated to use OpenAPI endpoints
+        // https://api.meshy.ai/openapi/v1/image-to-3d
+        // https://api.meshy.ai/openapi/v2/text-to-3d
+
         const MAX_RETRIES = 3;
         const RETRY_DELAY_MS = 5000;
 
@@ -58,9 +61,6 @@ export class MeshyProvider implements ProviderAdapter {
                     console.log(`[Meshy] Resolving asset ${options.image_asset_id} -> ${r2Key}...`);
                     const signedUrl = await getSignedDownloadUrl(r2Key, 3600);
                     options.image_url = signedUrl;
-                    console.log(`[Meshy] Using resolved signed URL for Image-to-3D.`);
-                } else {
-                    console.warn(`[Meshy] Asset ${options.image_asset_id} has no file/key.`);
                 }
             } catch (err: any) {
                 console.warn(`[Meshy] Failed to resolve asset ID: ${err.message}`);
@@ -74,7 +74,6 @@ export class MeshyProvider implements ProviderAdapter {
             const role = refMatch[1];
             try {
                 const key = `assets/refs/ref_${role}.png`;
-                console.log(`[Meshy] Found Geometry Ref tag: ${role}. Fetching URL for ${key}...`);
                 // Get signed URL (valid for 1 hour)
                 const signedUrl = await getSignedDownloadUrl(key, 3600);
                 options.image_url = signedUrl;
@@ -84,23 +83,26 @@ export class MeshyProvider implements ProviderAdapter {
             }
         }
 
-        let url = 'https://api.meshy.ai/v2/text-to-3d';
-        let payload: any = {
-            mode: 'preview',
+        let url = 'https://api.meshy.ai/openapi/v2/text-to-3d';
+
+        // Clean payload (Prevent context leakage)
+        const payload: any = {
+            mode: options.mode || 'preview',
             prompt: finalPrompt,
-            art_style: 'realistic',
+            art_style: options.art_style || 'realistic',
             should_remesh: true,
-            ...options
+            // Allow selective overrides from options, but sanitizing huge objects
+            seed: options.seed,
+            enable_pbr: options.enable_pbr
         };
 
         if (options.image_url) {
             console.log(`[Meshy] Using Image-to-3D with url: ${options.image_url}`);
-            url = 'https://api.meshy.ai/v1/image-to-3d';
-            payload = {
-                image_url: options.image_url,
-                enable_pbr: true,
-                ...options
-            };
+            url = 'https://api.meshy.ai/openapi/v1/image-to-3d';
+            payload.image_url = options.image_url;
+            payload.enable_pbr = true;
+
+            // Remove text-to-3d fields
             delete payload.prompt;
             delete payload.mode;
             delete payload.art_style;
@@ -126,13 +128,13 @@ export class MeshyProvider implements ProviderAdapter {
         // Poll
         let taskData;
         let retries = 0;
-        const maxRetries = 120; // Increased to 4 minutes for safety
+        const maxRetries = 120;
 
         while (retries < maxRetries) {
             await new Promise(r => setTimeout(r, 2000));
             const pollUrl = options.image_url
-                ? `https://api.meshy.ai/v1/image-to-3d/${taskId}`
-                : `https://api.meshy.ai/v2/text-to-3d/${taskId}`;
+                ? `https://api.meshy.ai/openapi/v1/image-to-3d/${taskId}`
+                : `https://api.meshy.ai/openapi/v2/text-to-3d/${taskId}`;
 
             const pollResp = await fetch(pollUrl, {
                 headers: { 'Authorization': `Bearer ${apiKey}` }
@@ -151,11 +153,21 @@ export class MeshyProvider implements ProviderAdapter {
         return taskData;
     }
 
-    async run(run: Run, stage: FlowStageTemplate, _attempt: number, _context: any, prompt: string): Promise<ProviderOutput> {
+    async run(run: Run, stage: FlowStageTemplate, _attempt: number, context: any, prompt: string): Promise<ProviderOutput> {
         const modelId = stage.model_id || 'meshy-4';
         console.log(`[Meshy] Calling ${modelId} for stage ${stage.stage_key}...`);
 
-        const taskData = await this.generate3D(prompt, { ..._context });
+        // Extract options without leaking entire context
+        // Context contains .context from seed bindings, and _secrets
+        const options: any = {
+            _secrets: context._secrets,
+            // If stage input bindings mapped something to 'image_asset_id', use it
+            image_asset_id: context.image_asset_id,
+            mode: context.mode,
+            art_style: context.art_style
+        };
+
+        const taskData = await this.generate3D(prompt, options);
 
         // Download GLB
         const glbUrl = taskData.model_urls.glb;
@@ -166,9 +178,10 @@ export class MeshyProvider implements ProviderAdapter {
             provider_result: taskData,
             _artifacts: [
                 {
-                    kind: 'exterior_model_source',
+                    kind: 'exterior_model_source', // Or generic 'model_3d'
                     slug: `${run.id}_${stage.stage_key}_model`,
                     data: Buffer.from(glbBuffer)
+                    // fileKind inferred as 'glb' by asset writer if we set correct mime
                 }
             ]
         };

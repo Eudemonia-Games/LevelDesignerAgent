@@ -19,7 +19,11 @@ export function buildRunContext(run: Run, stageRuns: StageRun[]): RunContext {
             seed: run.seed,
             mode: run.mode
         },
-        outputs: {}
+        outputs: {},
+        // Spread existing run context (inputs, constraints, etc) to root
+        ...run.context_json,
+        // Explicitly ensure 'context' object exists for Stage outputs
+        context: run.context_json.context || {}
     };
 
     // Index latest successful stage runs
@@ -35,8 +39,8 @@ export function buildRunContext(run: Run, stageRuns: StageRun[]): RunContext {
             // Nested under 'outputs' for clarity
             context.outputs[sr.stage_key] = data;
 
-            // And also at root for shorter templates: {{StageKey.output.foo}}
-            context[sr.stage_key] = data;
+            // And also at context.context.[StageKey] to match seed bindings like $.context.S1...
+            context.context[sr.stage_key] = data;
         }
     }
 

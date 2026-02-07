@@ -26,28 +26,33 @@ export async function createAsset(metadata: AssetMetadata): Promise<string> {
     return res.rows[0].id;
 }
 
-export async function createAssetFile(assetId: string, fileData: Buffer | string, fileKind: string): Promise<string> {
+export async function createAssetFile(
+    assetId: string,
+    fileData: Buffer | string,
+    fileKind: string,
+    options?: { mimeType?: string, fileExt?: string }
+): Promise<string> {
     const buffer = typeof fileData === 'string' ? Buffer.from(fileData) : fileData;
     const sha256 = crypto.createHash('sha256').update(buffer).digest('hex');
     const size = buffer.length;
 
-    // Upload to R2
-    // Key format: assets/<asset_id>/<file_kind>.<ext>
-    // We guess extension from mime type or default
-    // Wait, let's keep it simple: assets/<sha256>
-    // Deduplication at storage level? Or logical level?
-    // Design doc says: "asset_files (r2_key unique)"
-    // Let's use `assets/{assetId}/{fileKind}` for now to be distinct.
+    // Determine extension and mime
+    let mimeType = options?.mimeType || mime.lookup(fileKind) || 'application/octet-stream';
+    let ext = options?.fileExt || mime.extension(mimeType) || 'bin';
 
-    const ext = mime.extension(mime.lookup(fileKind) || 'application/octet-stream') || 'bin';
-    const r2Key = `assets/${assetId}/${fileKind}.${ext}`; // e.g. assets/UUID/grid_image.png
+    // Special case for 'model/gltf-binary' -> .glb
+    if (mimeType === 'model/gltf-binary' && !options?.fileExt) {
+        ext = 'glb';
+    }
 
-    await uploadAsset(r2Key, buffer, mime.lookup(fileKind) || 'application/octet-stream');
+    const r2Key = `assets/${assetId}/${fileKind}.${ext}`;
+
+    await uploadAsset(r2Key, buffer, mimeType);
 
     await getPool().query(`
         INSERT INTO asset_files (asset_id, file_kind, r2_key, mime_type, bytes_size, sha256)
         VALUES ($1, $2, $3, $4, $5, $6)
-    `, [assetId, fileKind, r2Key, mime.lookup(fileKind) || 'application/octet-stream', size, sha256]);
+    `, [assetId, fileKind, r2Key, mimeType, size, sha256]);
 
     return r2Key;
 }
