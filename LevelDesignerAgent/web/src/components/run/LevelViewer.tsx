@@ -26,45 +26,53 @@ interface AssetMap {
 
 // --- Components ---
 
-function Tile({ url, position, rotation = 0 }: { url?: string, position: [number, number, number], rotation?: number }) {
-    const gltf = useGLTF(url || '');
-    const scene = useMemo(() => url ? gltf.scene.clone() : null, [gltf, url]);
+function TileModel({ url, position, rotation = 0 }: { url: string, position: [number, number, number], rotation?: number }) {
+    const gltf = useGLTF(url);
+    const scene = useMemo(() => gltf.scene.clone(), [gltf]);
+    return <primitive object={scene} position={position} rotation={[0, rotation, 0]} />;
+}
 
-    if (!url || !scene) return (
+function Tile({ url, position, rotation = 0 }: { url?: string, position: [number, number, number], rotation?: number }) {
+    if (!url) return (
         <mesh position={position}>
             <boxGeometry args={[1, 0.1, 1]} />
             <meshStandardMaterial color="#333" />
         </mesh>
     );
+    return <TileModel url={url} position={position} rotation={rotation} />;
+}
 
-    return <primitive object={scene} position={position} rotation={[0, rotation, 0]} />;
+function PropModel({ url, position, rotation = 0, scale = 1 }: { url: string, position: [number, number, number], rotation?: number, scale?: number }) {
+    const gltf = useGLTF(url);
+    const scene = useMemo(() => gltf.scene.clone(), [gltf]);
+    return <primitive object={scene} position={position} rotation={[0, rotation, 0]} scale={[scale, scale, scale]} />;
 }
 
 function Prop({ url, position, rotation = 0, scale = 1 }: { url?: string, position: [number, number, number], rotation?: number, scale?: number }) {
-    const gltf = useGLTF(url || '');
-    const scene = useMemo(() => url ? gltf.scene.clone() : null, [gltf, url]);
-
-    if (!url || !scene) return (
+    if (!url) return (
         <mesh position={position}>
             <boxGeometry args={[0.5, 0.5, 0.5]} />
             <meshStandardMaterial color="orange" />
         </mesh>
     );
-    return <primitive object={scene} position={position} rotation={[0, rotation, 0]} scale={[scale, scale, scale]} />;
+    return <PropModel url={url} position={position} rotation={rotation} scale={scale} />;
 }
 
 function ExteriorModel({ url }: { url?: string }) {
-    const gltf = useGLTF(url || '');
-    const scene = useMemo(() => url ? gltf.scene.clone() : null, [gltf, url]);
-
-    if (!url || !scene) return (
+    if (!url) return (
         <mesh position={[0, 0, 0]}>
             <boxGeometry args={[5, 5, 5]} />
             <meshStandardMaterial color="#555" />
         </mesh>
     );
+    // Inline component to safely call hook? No, better to extract or just use null check if we can guarantee no-render.
+    // Actually, splitting is cleaner.
+    return <ExteriorModelInner url={url} />;
+}
 
-    // Scale up exterior maybe? S10 is usually small or big depending on prompt.
+function ExteriorModelInner({ url }: { url: string }) {
+    const gltf = useGLTF(url);
+    const scene = useMemo(() => gltf.scene.clone(), [gltf]);
     return <primitive object={scene} position={[0, 0, 0]} />;
 }
 
