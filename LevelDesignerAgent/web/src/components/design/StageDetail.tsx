@@ -155,11 +155,22 @@ export function StageDetail({ flowId, stageKey, onSaved, onCancel }: StageDetail
 
             <div style={{ margin: '10px 0' }}>
                 <label>Model ID: </label>
-                <input
-                    style={{ width: '100%' }}
-                    value={formData.model_id}
-                    onChange={e => setFormData({ ...formData, model_id: e.target.value })}
-                />
+                {formData.provider === 'gemini' ? (
+                    <select
+                        style={{ width: '100%' }}
+                        value={formData.model_id}
+                        onChange={e => setFormData({ ...formData, model_id: e.target.value })}
+                    >
+                        <option value="gemini-2.5-flash-image">Gemini 2.5 Flash Image (Nano Banana)</option>
+                        <option value="gemini-3-pro-image-preview">Gemini 3 Pro Image (Nano Banana Pro)</option>
+                    </select>
+                ) : (
+                    <input
+                        style={{ width: '100%' }}
+                        value={formData.model_id}
+                        onChange={e => setFormData({ ...formData, model_id: e.target.value })}
+                    />
+                )}
             </div>
 
             <div style={{ margin: '10px 0' }}>
