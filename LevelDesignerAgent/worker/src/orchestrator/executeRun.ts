@@ -11,6 +11,7 @@ import { OpenAIProvider } from '../providers/openai';
 import { FalProvider } from '../providers/fal';
 import { MeshyProvider } from '../providers/meshy';
 import { NanoBananaProvider } from '../providers/nanobanana';
+import { GeminiProvider } from '../providers/gemini';
 
 // Registry setup (should be in app startup, but lazy here works for worker)
 registerProvider('openai', new OpenAIProvider());
@@ -18,6 +19,8 @@ registerProvider('fal', new FalProvider());
 registerProvider('meshy', new MeshyProvider());
 registerProvider('rodin', new MeshyProvider()); // Alias for now or implement separate
 registerProvider('nanobanana', new NanoBananaProvider());
+// Register Gemini for Text/LLM (SDK based)
+registerProvider('gemini', new GeminiProvider());
 // Register others later or import a bootstrap file
 
 import { buildRunContext } from './context';
