@@ -51,6 +51,8 @@ export class OpenAIProvider implements ProviderAdapter {
         const model = stage.model_id || 'gpt-4o';
         console.log(`[OpenAI] Calling ${model} for stage ${stage.stage_key}...`);
 
+        if (!this.client) throw new Error("OPENAI_API_KEY not configured");
+
         const options: any = {};
 
         // Handle Vision / Attachments

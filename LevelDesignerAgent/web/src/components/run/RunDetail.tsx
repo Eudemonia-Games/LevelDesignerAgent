@@ -51,7 +51,7 @@ export function RunDetail({ runId, onClose }: RunDetailProps) {
     );
 
     return (
-        <div style={{ padding: '20px', height: '100%', overflowY: 'auto', background: 'white' }}>
+        <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
             <button onClick={onClose} style={{ marginBottom: '10px' }}>&larr; Back</button>
 
             <div style={{ marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
@@ -74,10 +74,12 @@ export function RunDetail({ runId, onClose }: RunDetailProps) {
                     {stages.length === 0 && <div>No stages yet.</div>}
                     {stages.map(stage => (
                         <div key={stage.id} style={{
-                            padding: '10px', marginBottom: '10px', border: '1px solid #ddd',
-                            borderRadius: '4px', background: stage.status === 'running' ? '#e6f7ff' :
-                                stage.status === 'succeeded' ? '#f6ffed' :
-                                    stage.status === 'failed' ? '#fff1f0' : 'white'
+                            padding: '10px', marginBottom: '10px', border: '1px solid #444',
+                            borderRadius: '4px',
+                            background: stage.status === 'running' ? '#172554' : // blue-950
+                                stage.status === 'succeeded' ? '#052e16' : // green-950
+                                    stage.status === 'failed' ? '#450a0a' : '#2a2a2a', // red-950 or gray
+                            color: '#e0e0e0'
                         }}>
                             <div style={{ fontWeight: 'bold' }}>{stage.stage_key} (Attempt {stage.attempt})</div>
                             <div>Status: {stage.status}</div>

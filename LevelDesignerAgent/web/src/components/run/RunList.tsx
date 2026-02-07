@@ -38,8 +38,8 @@ export function RunList({ onSelectRun, refreshTrigger }: RunListProps) {
                         key={run.id}
                         onClick={() => onSelectRun(run.id)}
                         style={{
-                            padding: '10px', border: '1px solid #eee', marginBottom: '5px',
-                            cursor: 'pointer', background: 'white'
+                            padding: '10px', border: '1px solid #444', marginBottom: '5px',
+                            cursor: 'pointer', background: '#2a2a2a', color: '#e0e0e0'
                         }}
                     >
                         <div style={{ fontWeight: 'bold' }}>{run.user_prompt.substring(0, 50)}...</div>
