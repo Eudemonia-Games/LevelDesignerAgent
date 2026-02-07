@@ -3,7 +3,6 @@ import { ProviderAdapter, ProviderOutput } from './index';
 import { FlowStageTemplate, Run } from '../db/types';
 
 export class OpenAIProvider implements ProviderAdapter {
-    private static instance: OpenAIProvider | null = null;
     private client: OpenAI | null = null;
     private apiKeyName: string = 'OPENAI_API_KEY';
 
@@ -17,14 +16,6 @@ export class OpenAIProvider implements ProviderAdapter {
                 baseURL: config.baseURL
             });
         }
-    }
-
-    static getInstance(config: { apiKeyName?: string; baseURL?: string } = {}): OpenAIProvider {
-        // Note: Singleton logic here is flawed if we want different configs for different providers.
-        // We should return new instances or map by config.
-        // For simplicity in this worker, we will just return new instance if config is passed, 
-        // OR we just register them as separate instances in index.ts and don't use getInstance() there.
-        return new OpenAIProvider(config);
     }
 
     async generateText(prompt: string, model: string = 'gpt-4o', options: any = {}): Promise<any> {

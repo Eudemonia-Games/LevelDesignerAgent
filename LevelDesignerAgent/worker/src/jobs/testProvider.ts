@@ -11,7 +11,7 @@ export async function processTestProviderJob(job: { id: string, payload: TestPro
 
         switch (provider) {
             case 'openai':
-                resultData = await OpenAIAdapter.getInstance().generateText(prompt, model, options);
+                resultData = await new OpenAIAdapter().generateText(prompt, model, options);
                 break;
             case 'gemini':
                 resultData = await GeminiAdapter.getInstance().generateText(prompt, model, options);
