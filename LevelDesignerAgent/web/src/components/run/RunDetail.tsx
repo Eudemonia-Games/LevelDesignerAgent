@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fetchApi } from '../../api';
 import { Run, StageRun, RunEvent } from '@lda/shared';
+import { LevelViewer } from './LevelViewer';
 
 interface RunDetailProps {
     runId: string;
@@ -12,6 +13,7 @@ export function RunDetail({ runId, onClose }: RunDetailProps) {
     const [stages, setStages] = useState<StageRun[]>([]);
     const [events, setEvents] = useState<RunEvent[]>([]);
     const [loading, setLoading] = useState(false);
+    const [show3D, setShow3D] = useState(false);
 
     const [error, setError] = useState<string | null>(null);
 
@@ -39,6 +41,10 @@ export function RunDetail({ runId, onClose }: RunDetailProps) {
         const interval = setInterval(loadData, 2000); // Poll every 2s
         return () => clearInterval(interval);
     }, [runId]);
+
+    if (show3D) {
+        return <LevelViewer runId={runId} onClose={() => setShow3D(false)} />;
+    }
 
     if (!run && loading) return <div>Loading detail...</div>;
     if (!run) return (
@@ -72,6 +78,19 @@ export function RunDetail({ runId, onClose }: RunDetailProps) {
                         window.open(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/runs/${run.id}/download`, '_blank');
                     }}>
                         ⬇️ Download Assets
+                    </button>
+                    <button style={{
+                        marginLeft: '10px',
+                        background: '#0ea5e9', // Sky blue
+                        border: '1px solid #0284c7',
+                        color: 'white',
+                        padding: '4px 8px',
+                        cursor: 'pointer',
+                        borderRadius: '4px',
+                        fontSize: '0.8rem',
+                        fontWeight: 'bold'
+                    }} onClick={() => setShow3D(true)}>
+                        cube View 3D
                     </button>
                 </div>
                 {run.error_summary && (

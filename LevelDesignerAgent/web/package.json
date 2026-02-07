@@ -1,25 +1,29 @@
 {
-    "name":  "@lda/web",
-    "version":  "1.0.0",
-    "type":  "module",
-    "scripts":  {
-                    "dev":  "vite",
-                    "build":  "vite build",
-                    "preview":  "vite preview",
-                    "lint":  "eslint src --ext .ts,.tsx",
-                    "typecheck":  "tsc --noEmit"
-                },
-    "dependencies":  {
-                         "@lda/shared":  "workspace:*",
-                         "react":  "^18.2.0",
-                         "react-dom":  "^18.2.0",
-                         "react-router-dom":  "^7.13.0"
-                     },
-    "devDependencies":  {
-                            "@types/react":  "^18.2.55",
-                            "@types/react-dom":  "^18.2.19",
-                            "@vitejs/plugin-react":  "^4.2.1",
-                            "typescript":  "^5.3.3",
-                            "vite":  "^5.1.0"
-                        }
+    "name": "@lda/web",
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "lint": "eslint src --ext .ts,.tsx",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@lda/shared": "workspace:*",
+        "@react-three/drei": "^10.7.7",
+        "@react-three/fiber": "^9.5.0",
+        "@types/three": "^0.182.0",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+        "react-router-dom": "^7.13.0",
+        "three": "^0.182.0"
+    },
+    "devDependencies": {
+        "@types/react": "^18.2.55",
+        "@types/react-dom": "^18.2.19",
+        "@vitejs/plugin-react": "^4.2.1",
+        "typescript": "^5.3.3",
+        "vite": "^5.1.0"
+    }
 }
