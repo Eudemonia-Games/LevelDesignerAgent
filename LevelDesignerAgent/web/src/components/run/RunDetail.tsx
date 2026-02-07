@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchApi } from '../../api';
 import { Run, StageRun, RunEvent } from '@lda/shared';
 import { LevelViewer } from './LevelViewer';
+import { ErrorBoundary } from '../ErrorBoundary';
 
 interface RunDetailProps {
     runId: string;
@@ -44,10 +45,12 @@ export function RunDetail({ runId, onClose }: RunDetailProps) {
 
     if (show3D) {
         return (
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111' }}>
-                <React.Suspense fallback={<div style={{ color: 'white' }}>Loading 3D Assets...</div>}>
-                    <LevelViewer runId={runId} onClose={() => setShow3D(false)} />
-                </React.Suspense>
+            <div style={{ width: '100%', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111' }}>
+                <ErrorBoundary fallback={<div style={{ color: 'red', padding: 20 }}>Critical 3D Viewer Error. Check console.</div>}>
+                    <React.Suspense fallback={<div style={{ color: 'white' }}>Loading 3D Assets...</div>}>
+                        <LevelViewer runId={runId} onClose={() => setShow3D(false)} />
+                    </React.Suspense>
+                </ErrorBoundary>
             </div>
         );
     }
