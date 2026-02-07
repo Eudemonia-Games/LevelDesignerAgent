@@ -9,6 +9,12 @@ interface RunDetailProps {
     onClose: () => void;
 }
 
+
+const safeTime = (value: unknown) => {
+    const d = value ? new Date(value as any) : null;
+    return d && !Number.isNaN(d.getTime()) ? d.toLocaleTimeString() : '—';
+};
+
 export function RunDetail({ runId, onClose }: RunDetailProps) {
     const [run, setRun] = useState<Run | null>(null);
     const [stages, setStages] = useState<StageRun[]>([]);
@@ -148,11 +154,11 @@ export function RunDetail({ runId, onClose }: RunDetailProps) {
                     <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #eee', padding: '10px' }}>
                         {events.map(ev => (
                             <div key={ev.id} style={{ marginBottom: '5px', fontSize: '0.9em' }}>
-                                <span style={{ color: '#888' }}>{new Date(ev.created_at).toLocaleTimeString()}</span>
+                                <span style={{ color: '#888' }}>{safeTime(ev.created_at)}</span>
                                 {' '}
                                 <span style={{
                                     fontWeight: 'bold',
-                                    color: ev.level === 'error' ? 'red' : ev.level === 'warn' ? 'orange' : 'black'
+                                    color: ev.level === 'error' ? '#ef4444' : ev.level === 'warn' ? '#f59e0b' : '#e5e7eb'
                                 }}>
                                     [{ev.level.toUpperCase()}]
                                 </span>

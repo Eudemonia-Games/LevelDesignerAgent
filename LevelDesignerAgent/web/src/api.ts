@@ -25,9 +25,17 @@ export async function fetchApi(path: string, options: RequestInit = {}) {
     }
 
     // Return json if content-type says so, else text or void
+    // Return json if content-type says so, else text or void
     const contentType = res.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
-        return res.json();
+        const text = await res.text();
+        try {
+            return text ? JSON.parse(text) : {};
+        } catch (e) {
+            throw new Error(`API returned invalid JSON (${res.status}): ${text.slice(0, 100)}...`);
+        }
     }
+
+    // If not JSON but status is OK, return text
     return res.text();
 }

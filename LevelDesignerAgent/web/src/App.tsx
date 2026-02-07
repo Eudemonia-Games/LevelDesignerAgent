@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Login } from './Login';
 import { AppShell } from './components/layout/AppShell';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { DesignPage, RunPage, LibraryPage, AdminPage } from './pages';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -63,7 +64,11 @@ function App() {
                         <>
                             <Route index element={<Navigate to="/design" replace />} />
                             <Route path="design" element={<DesignPage />} />
-                            <Route path="run" element={<RunPage />} />
+                            <Route path="run" element={
+                                <ErrorBoundary fallback={<div style={{ padding: 20, color: 'white' }}>Run UI Crashed. Check console.</div>}>
+                                    <RunPage />
+                                </ErrorBoundary>
+                            } />
                             <Route path="admin" element={<AdminPage onSessionExpired={() => setIsAuthenticated(false)} />} />
                         </>
                     ) : (

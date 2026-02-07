@@ -187,8 +187,8 @@ export function LevelViewer({ runId, onClose }: { runId: string; onClose: () => 
 
     if (loading) return <div style={{ color: 'white' }}>Loading 3D Scene...</div>;
 
-    const width = layout?.room?.width || 10;
-    const height = layout?.room?.height || 10;
+    const width = Math.max(1, Math.min(50, Math.floor(Number(layout?.room?.width ?? 10))));
+    const height = Math.max(1, Math.min(50, Math.floor(Number(layout?.room?.height ?? 10))));
 
     const spawnX = -width / 2 + 2;
     const spawnZ = -height / 2 + 2;
