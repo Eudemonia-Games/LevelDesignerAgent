@@ -12,17 +12,26 @@ export class GeminiProvider implements ProviderAdapter {
         const genAI = new GoogleGenerativeAI(apiKey);
 
         // Handle model aliases
+        // Handle model aliases / fallbacks
         let modelId = stage.model_id || 'gemini-1.5-flash';
+        if (modelId === 'gemini-3-flash-preview') {
+            console.warn(`[Gemini] Remapping ${modelId} -> gemini-2.0-flash-exp`);
+            modelId = 'gemini-2.0-flash-exp';
+        }
 
-        // Use a known stable model if specific preview causes issues, or trust the input.
-        // gemini-3-flash-preview might be valid, so we keep it.
-
-        console.log(`[Gemini] Generating text with ${modelId}...`);
+        console.log(`[Gemini] Generating text with ${modelId}... (Prompt length: ${prompt.length})`);
 
         try {
             const model = genAI.getGenerativeModel({ model: modelId });
 
-            const result = await model.generateContent(prompt);
+            // specific timeout to avoid worker hang/sigterm
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Gemini Request Timed Out (60s)")), 60000));
+
+            const result: any = await Promise.race([
+                model.generateContent(prompt),
+                timeoutPromise
+            ]);
+
             const response = await result.response;
             const text = response.text();
 
