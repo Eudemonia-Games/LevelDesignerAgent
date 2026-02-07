@@ -6,6 +6,9 @@ export interface ProviderOutput {
         kind: string;
         slug: string;
         data: any; // Buffer or string
+        file_kind?: string;
+        mime_type?: string;
+        file_ext?: string;
     }[];
 }
 

@@ -1,5 +1,8 @@
 import { TestProviderRequest, TestProviderResult } from '@lda/shared';
-import { OpenAIAdapter, FalAdapter, MeshyAdapter } from '../providers/adapters';
+// import { OpenAIAdapter, FalAdapter, MeshyAdapter } from '../providers/adapters';
+import { OpenAIProvider as OpenAIAdapter } from '../providers/openai';
+import { FalProvider as FalAdapter } from '../providers/fal';
+import { MeshyProvider as MeshyAdapter } from '../providers/meshy';
 
 // This function processes the test_provider_call job
 export async function processTestProviderJob(job: { id: string, payload: TestProviderRequest }): Promise<TestProviderResult> {
@@ -24,7 +27,13 @@ export async function processTestProviderJob(job: { id: string, payload: TestPro
                 resultData = await FalAdapter.getInstance().generateImage(prompt, model, options);
                 break;
             case 'meshy':
-                resultData = await MeshyAdapter.getInstance().generate3D(prompt, options);
+                // Mock run/stage for .run()
+                const mockRun: any = { id: 'test-run', flow_version_id: 'test-flow', mode: 'test', seed: 123 };
+                const mockStage: any = { stage_key: 'TEST_STAGE', provider: 'meshy', kind: '3d_model', model_id: 'meshy-4' };
+                // Pass options as context._secrets or direct overrides if provider supports it
+                const mockContext: any = { _secrets: options?._secrets || {}, ...options };
+
+                resultData = await MeshyAdapter.getInstance().run(mockRun, mockStage, 1, mockContext, prompt);
                 break;
             case 'rodin':
                 throw new Error("Rodin provider not yet implemented");
