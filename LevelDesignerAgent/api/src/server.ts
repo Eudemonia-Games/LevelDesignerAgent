@@ -4,9 +4,7 @@ import cookie from '@fastify/cookie';
 import { APP_VERSION } from '@lda/shared';
 import { authRoutes, AuthService } from './auth';
 import { secretsRoutes } from './routes/secrets';
-
-
-// ... (rest of file)
+import { getDbConfig } from './db/utils';
 
 export const buildServer = async () => {
     const server = Fastify();
@@ -44,8 +42,6 @@ export const buildServer = async () => {
         parseOptions: {}
     });
 
-
-
     server.addHook('onRequest', async (req, reply) => {
         // Public Routes & Preflight
         if (req.method === 'OPTIONS') return;
@@ -59,8 +55,6 @@ export const buildServer = async () => {
         }
     });
 
-
-
     server.register(authRoutes);
     server.register(secretsRoutes);
 
@@ -72,10 +66,7 @@ export const buildServer = async () => {
             try {
                 // Quick connectivity check
                 const { Client } = await import("pg");
-                const client = new Client({
-                    connectionString: process.env.DATABASE_URL,
-                    ssl: process.env.DATABASE_URL.includes("localhost") ? false : { rejectUnauthorized: false },
-                });
+                const client = new Client(getDbConfig(process.env.DATABASE_URL));
                 await client.connect();
 
                 // Verify critical tables exist

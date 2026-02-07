@@ -9,14 +9,14 @@ export async function runMigrations() {
         return;
     }
 
-    // Sanitizer: Remove channel_binding if present (Node pg doesn't support it well)
+    // Sanitizer: Remove channel_binding if present
     let connectionString = dbUrl;
     if (dbUrl.includes("channel_binding")) {
-        console.warn("⚠️ [DB] URL contained unsupported param: channel_binding (ignored)");
         connectionString = dbUrl.replace(/([?&])channel_binding=[^&]+(&|$)/, '$1').replace(/&$/, '');
     }
 
-    console.log(`Running migrations...`);
+    // Explicitly NO logging of the URL
+    console.log(`db:migrate start`);
 
     const client = new Client({
         connectionString,
@@ -36,10 +36,10 @@ export async function runMigrations() {
         await client.query(SCHEMA_SQL);
         await client.query("COMMIT");
 
-        console.log("✅ [DB] Migrations applied successfully.");
+        console.log("db:migrate success");
     } catch (err) {
         await client.query("ROLLBACK");
-        console.error("❌ [DB] Migration failed:", err);
+        console.error("db:migrate error:", (err as any).message);
         process.exit(1); // Exit if critical DB setup fails
     } finally {
         await client.end();

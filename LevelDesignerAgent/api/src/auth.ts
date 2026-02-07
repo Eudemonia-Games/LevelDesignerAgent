@@ -3,6 +3,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { randomBytes, createHash } from 'crypto';
 import bcrypt from 'bcryptjs';
 import { Client } from 'pg';
+import { getDbConfig } from './db/utils';
 
 // --- Constants ---
 const SESSION_COOKIE_NAME = 'lda_session';
@@ -59,15 +60,11 @@ export const AuthService = {
         const dbUrl = process.env.DATABASE_URL;
         if (!dbUrl) return false;
 
-        let connectionString = dbUrl;
-        if (dbUrl.includes("channel_binding")) {
-            connectionString = dbUrl.replace(/([?&])channel_binding=[^&]+(&|$)/, '$1').replace(/&$/, '');
-        }
 
-        const client = new Client({
-            connectionString,
-            ssl: connectionString.includes("localhost") ? false : { rejectUnauthorized: false }
-        });
+
+        // ...
+
+        const client = new Client(getDbConfig(dbUrl));
 
         try {
             await client.connect();

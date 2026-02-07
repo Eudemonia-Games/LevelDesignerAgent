@@ -16,7 +16,7 @@ export async function runMigrations() {
         connectionString = dbUrl.replace(/([?&])channel_binding=[^&]+(&|$)/, '$1').replace(/&$/, '');
     }
 
-    console.log(`Running migrations...`);
+    console.log(`db:migrate start`);
 
     const client = new Client({
         connectionString,

@@ -1,5 +1,6 @@
 import { Client } from 'pg';
 import { encryptSecret, decryptSecret } from './crypto';
+import { getDbConfig } from '../db/utils';
 
 // --- Known Secrets Whitelist ---
 export const KNOWN_SECRETS = [
@@ -38,12 +39,11 @@ export const SecretsService = {
         const dbUrl = process.env.DATABASE_URL;
         if (!dbUrl) throw new Error("DB not configured");
 
-        const client = new Client({
-            connectionString: dbUrl.includes("channel_binding")
-                ? dbUrl.replace(/([?&])channel_binding=[^&]+(&|$)/, '$1').replace(/&$/, '')
-                : dbUrl,
-            ssl: dbUrl.includes("localhost") ? false : { rejectUnauthorized: false }
-        });
+
+
+        // ...
+
+        const client = new Client(getDbConfig(dbUrl));
 
         try {
             await client.connect();
@@ -98,12 +98,7 @@ export const SecretsService = {
         const dbUrl = process.env.DATABASE_URL;
         if (!dbUrl) throw new Error("DB not configured");
 
-        const client = new Client({
-            connectionString: dbUrl.includes("channel_binding")
-                ? dbUrl.replace(/([?&])channel_binding=[^&]+(&|$)/, '$1').replace(/&$/, '')
-                : dbUrl,
-            ssl: dbUrl.includes("localhost") ? false : { rejectUnauthorized: false }
-        });
+        const client = new Client(getDbConfig(dbUrl));
 
         try {
             await client.connect();

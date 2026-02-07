@@ -213,3 +213,32 @@ None.
 2. Login -> Secrets.
 3. Verify UX.
 4. Check Render logs for hygiene.
+
+### LDA.1.5.0 - Phase 1 Verification & Hardening
+
+#### Plan
+Lock Phase 1 by hardening DB connections against Render/Neon query parameters and enforcing strict log hygiene. Create comprehensive verification documentation and handoff materials for Phase 2 (Agent Core).
+
+#### Files changed
+- [MODIFY] shared/src/version.ts (LDA.1.5.0)
+- [NEW] api/src/db/utils.ts (DB Sanitizer)
+- [MODIFY] api/src/server.ts, auth.ts, secrets/service.ts (Use sanitizer)
+- [MODIFY] worker/src/index.ts, worker/src/db/migrations.ts (Use sanitizer)
+- [NEW] docs/lda/PHASE1_VERIFY.md
+- [UPDATE] docs/lda/03_Current_Phase_Plan.md
+- [APPEND] docs/lda/04_Development_Summary.md
+- [NEW] notes/lda/LDA.1.5.0.md
+
+#### Mismatches
+None.
+
+#### Limitations
+- None.
+
+#### How to verify in Repo Mode
+1. `pnpm -r build`
+2. `pnpm --filter @lda/api start` -> Check logs for cleanliness.
+
+#### How to verify in Render Mode
+1. Deploy all services.
+2. Follow `docs/lda/PHASE1_VERIFY.md`.
