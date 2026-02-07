@@ -13,12 +13,22 @@ export class GeminiProvider implements ProviderAdapter {
 
         // Handle model aliases
         // Handle model aliases / fallbacks
-        let modelId = stage.model_id || 'gemini-2.5-flash-image';
+        // Handle model aliases / fallbacks
+        // Handle model aliases / fallbacks
+        let modelId = stage.model_id || 'gemini-2.5-flash';
 
-        // Force user's requested model for everything
-        if (modelId.includes('gemini-3') || modelId.includes('gemini-2.0')) {
-            console.warn(`[Gemini] Remapping ${modelId} -> gemini-2.5-flash-image`);
-            modelId = 'gemini-2.5-flash-image';
+        // Force reliable text model for this provider (Stage 1, 2, 3...)
+        // The user asked to use "2.5-flash" (assuming it exists/works for text).
+        // We will map everything to 2.5-flash.
+        if (modelId.includes('gemini-3') || modelId.includes('gemini-2.0') || modelId.includes('gemini-2.5-flash-image')) {
+            console.warn(`[Gemini] Remapping ${modelId} -> gemini-2.5-flash (Text Provider)`);
+            modelId = 'gemini-2.5-flash';
+        }
+
+        // If the model explicitly contains "image" and this is a text provider, remap it.
+        if (modelId.includes('image') && !modelId.includes('gemini-2.5-flash')) { // Avoid remapping if it's already the target
+            console.warn(`[Gemini] Remapping image model ${modelId} -> gemini-2.5-flash (Text Provider)`);
+            modelId = 'gemini-2.5-flash';
         }
 
         console.log(`[Gemini] Generating text with ${modelId}... (Prompt length: ${prompt.length})`);

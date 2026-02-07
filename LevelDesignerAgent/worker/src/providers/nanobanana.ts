@@ -9,16 +9,8 @@ function sleep(ms: number) {
     return new Promise(res => setTimeout(res, ms));
 }
 
-function normalizeModelId(modelId: string | undefined): string {
-    const id = (modelId || '').trim();
-    if (!id) return 'gemini-2.5-flash-image';
+// function normalizeModelId(modelId: string | undefined): string { ... } // Removed
 
-    // Known-bad / deprecated ids we've seen in the wild
-    if (id === 'gemini-2.0-flash-exp') return 'gemini-2.5-flash-image';
-    if (id === 'gemini-2.0-flash') return 'gemini-2.5-flash-image';
-
-    return id;
-}
 
 async function callGenerateContent(apiKey: string, modelId: string, prompt: string) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${encodeURIComponent(apiKey)}`;
@@ -56,12 +48,8 @@ export class NanoBananaProvider implements ProviderAdapter {
         }
 
         // Preferred + fallback model list
-        const requested = normalizeModelId(stage.model_id);
-        const candidates = Array.from(new Set([
-            requested,
-            'gemini-2.5-flash-image',
-            'gemini-3-pro-image-preview'
-        ]));
+        // const requested = normalizeModelId(stage.model_id); // Unused
+        const candidates = ['gemini-2.5-flash-image'];
 
         console.log(`[NanoBanana] Generating image. Requested=${stage.model_id || '(none)'} Using candidates=${candidates.join(', ')}`);
 
