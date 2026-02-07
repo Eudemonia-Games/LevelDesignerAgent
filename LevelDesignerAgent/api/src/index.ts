@@ -8,6 +8,7 @@ dotenv.config();
 
 import { buildServer } from './server';
 import { runMigrations } from './db/migrations';
+import { seedDefaults } from './db/seed';
 
 const start = async () => {
     console.log(`[API] Starting service... Version: ${process.env.npm_package_version || 'unknown'}`);
@@ -20,10 +21,20 @@ const start = async () => {
         await server.listen({ port, host: '0.0.0.0' });
         console.log(`API server listening on port ${port}`);
 
+
+
+        // ... inside start() ...
+
         // Run migrations in background (non-blocking to startup, but vital for app)
         console.log("[API] Starting DB migrations...");
-        runMigrations().then(() => {
+        runMigrations().then(async () => {
             console.log("[API] Migrations completed.");
+            // Run seeding after migrations
+            if (process.env.DATABASE_URL) {
+                console.log("[API] Starting DB seeding...");
+                await seedDefaults();
+                console.log("[API] DB seeding completed.");
+            }
         }).catch(err => {
             console.error("❌ [API] Critical: Migrations failed:", err);
         });

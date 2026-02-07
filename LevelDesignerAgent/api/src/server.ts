@@ -6,7 +6,7 @@ import { authRoutes, AuthService } from './auth';
 import { assetsRoutes } from './routes/assets';
 import { runsRoutes } from './routes/runs';
 import { exportRoutes } from './routes/export';
-import { seedDefaults } from './db/seed';
+// import { seedDefaults } from './db/seed';
 import { getDbConfig } from './db/utils';
 
 export const buildServer = async () => {
@@ -70,11 +70,11 @@ export const buildServer = async () => {
     const { adminRoutes } = await import('./routes/admin');
     server.register(adminRoutes);
 
-    server.addHook('onReady', async () => {
-        if (process.env.DATABASE_URL) {
-            await seedDefaults().catch(err => console.error("Seed failed:", err));
-        }
-    });
+    // server.addHook('onReady', async () => {
+    //    if (process.env.DATABASE_URL) {
+    //        await seedDefaults().catch(err => console.error("Seed failed:", err));
+    //    }
+    // });
 
     server.get('/health', async () => {
         let dbStatus = "unknown";
