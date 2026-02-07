@@ -10,12 +10,14 @@ import { getProvider, registerProvider } from '../providers';
 import { OpenAIProvider } from '../providers/openai';
 import { FalProvider } from '../providers/fal';
 import { MeshyProvider } from '../providers/meshy';
+import { NanoBananaProvider } from '../providers/nanobanana';
 
 // Registry setup (should be in app startup, but lazy here works for worker)
 registerProvider('openai', new OpenAIProvider());
 registerProvider('fal', new FalProvider());
 registerProvider('meshy', new MeshyProvider());
 registerProvider('rodin', new MeshyProvider()); // Alias for now or implement separate
+registerProvider('nanobanana', new NanoBananaProvider());
 // Register others later or import a bootstrap file
 
 import { buildRunContext } from './context';
@@ -37,9 +39,6 @@ export async function executeRun(run: Run) {
     stageRuns.forEach(sr => historyMap.set(sr.stage_key, sr));
 
     // 3. Determine Next Stage
-
-
-    // 3. Determine Next Stage
     let nextStage: FlowStageTemplate | null = null;
     let attempt = 1;
 
@@ -57,26 +56,17 @@ export async function executeRun(run: Run) {
         // In a linear non-branching flow, we look for the last successful stage and go to next order.
         // In branching, we look at the last *executed* stage (by time or graph traversal).
 
-        // Let's sort stageRuns by ended_at desc (most recent execution).
-        // Wait, 'latest' map logic was good for "what happened to THIS stage".
-        // But for "what is NEXT", we need to know where we are.
-
         // Find the most recently updated stage run
-        // (This logic needs to be robust for parallel branches, but for now we assume single cursor)
         const recentRun = stageRuns.sort((a, b) => {
             const tA = new Date(a.ended_at || a.started_at || 0).getTime();
             const tB = new Date(b.ended_at || b.started_at || 0).getTime();
             return tB - tA; // DESC
         })[0];
 
-        // If the most recent one is Running/Pending/Failed, we handle it (retry or wait).
-        // If it Succeeded, we look for next.
-
         if (recentRun) {
             const tmpl = getStageByKey(recentRun.stage_key);
             if (!tmpl) {
                 // Stage template deleted?
-                // Fallback to flow order?
                 return;
             }
 
@@ -98,8 +88,6 @@ export async function executeRun(run: Run) {
                     // Evaluate rules in priority order (assuming array order is priority)
                     for (const rule of tmpl.routing_rules_json) {
                         // Build context for eval. 
-                        // Flattened context? run.context_json might have { context: { stageA: ... } }
-                        // Let's expose `context` as the root for safeEval
                         const evalContext = {
                             context: run.context_json.context || {},
                             inputs: run.context_json.inputs || {},
@@ -150,7 +138,6 @@ export async function executeRun(run: Run) {
     const secretsMap: Record<string, string> = {};
 
     // Determine which secrets are needed based on provider
-    // This is a simple mapping for now. Could be smarter/metadata driven.
     const provider = nextStage.provider;
     if (provider === 'openai') {
         const key = await SecretsService.getDecryptedSecret('OPENAI_API_KEY');
@@ -196,14 +183,17 @@ export async function executeRun(run: Run) {
         // 6. Execute (Real Provider)
         let output: any;
         try {
-            const provider = getProvider(nextStage.provider);
+            let providerName = nextStage.provider;
+            // Dispatch 'gemini' image stages to 'nanobanana'
+            if (providerName === 'gemini' && nextStage.kind === 'image') {
+                providerName = 'nanobanana';
+            }
+
+            const provider = getProvider(providerName);
             output = await provider.run(run, nextStage, attempt, context, resolvedPrompt);
         } catch (e: any) {
             if (e.message.includes('not configured') || e.message.includes('not found')) {
                 // Fallback to stub if provider missing/unconfigured?
-                // For Phase 7, we want to try real, but if key missing, maybe we should stub to not break verification?
-                // No, "Real Providers" implies keys. But if user didn't set key, we break.
-                // Let's import stub as fallback ONLY if key missing error.
                 await emitRunEvent(run.id, 'warn', `Provider ${nextStage.provider} failed: ${e.message}. Falling back to STUB.`);
                 const { generateStubOutput } = await import('./stubs');
                 output = generateStubOutput(run, nextStage, attempt);
@@ -212,7 +202,6 @@ export async function executeRun(run: Run) {
             }
         }
 
-        // 7. Persist Success
         // 7. Persist Success
 
         // Handle Artifacts
@@ -267,31 +256,9 @@ export async function executeRun(run: Run) {
             return; // Stop execution loop
         }
 
-        // 10. Recursively continue? 
-        // For simple worker, we can just process one stage per tick or loop here.
-        // Looping here is better throughput.
-        // Let's recurse to process next stage immediately if not paused.
-        // We need to fetch fresh run state? No, we just modified it.
-        // But to be safe and simple, let's return and let the loop claim it again (or next tick).
-        // Actually, returning allows other runs to interleave if we claimed only one.
-        // But for efficiency, usually we loop until blocked.
-        // Let's try to loop by calling executeRun again?
-        // Wait, executeRun takes a Run object. The run object is stale now (context, status updated in DB).
-        // Let's just return. The poller will pick it up again immediately because it's still 'running'.
-        // Wait, claimRun fetches 'queued' or 'stale running'. 
-        // If we set it directly to 'running', claimRun won't pick it up unless it thinks it's stale!
-        // Ah, claimRun logic: `WHERE status = 'queued' OR ...`
-        // If we leave it as 'running', the poller won't pick it up until it times out!
-
-        // FIX: We must Loop inside here, OR we must update proper state.
-        // Design doc says: "Claim one run... execute next stage(s)".
-        // So we should loop.
-
-        // Let's re-fetch the run from DB to get latest state? 
-        // Or just mutate local object? Local object is fine if we are careful.
-        // Updated run state:
+        // 10. Recursively continue?
+        // Loop by recursive call (tail recursion typically optimized or stack depth limits apply, but ok for now)
         run.context_json = newContext;
-        // Proceed to next stage
         await executeRun(run);
 
     } catch (e: any) {

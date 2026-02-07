@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') }); // api/src/db/ -> ../../../.env
 import { FlowsDb, UpsertStageParams } from './flows';
 
 const DEFAULT_STAGES: (UpsertStageParams & { stage_key: string })[] = [
@@ -235,7 +238,7 @@ Return JSON ONLY matching the expected schema (pillar_instances, wall_separator_
         order_index: 50,
         kind: 'image',
         provider: 'gemini',
-        model_id: 'imagen-3.0-generate-001', // Using Gemini (Imagen 3)
+        model_id: 'gemini-3-pro-image-preview', // Using Gemini (Imagen 3)
         prompt_template: '{{exterior_image_prompt}}',
         input_bindings_json: {
             "exterior_image_prompt": "$.context.S2_ANCHOR_PROMPTS.exterior_image_prompt"
@@ -248,7 +251,7 @@ Return JSON ONLY matching the expected schema (pillar_instances, wall_separator_
         order_index: 60,
         kind: 'image',
         provider: 'gemini',
-        model_id: 'imagen-3.0-generate-001',
+        model_id: 'gemini-3-pro-image-preview',
         prompt_template: '{{interior_style_image_prompt}}',
         input_bindings_json: {
             "interior_style_image_prompt": "$.context.S2_ANCHOR_PROMPTS.interior_style_image_prompt"
@@ -261,7 +264,7 @@ Return JSON ONLY matching the expected schema (pillar_instances, wall_separator_
         order_index: 70,
         kind: 'image',
         provider: 'gemini', // Design doc says image batch, usually Gemini or Fal
-        model_id: 'imagen-3.0-generate-001', // Generating images via Gemini
+        model_id: 'gemini-3-pro-image-preview', // High fidelity
         prompt_template: `Create a clean, well-lit reference image of a dungeon tile.
 
 Tile role: {{tile_role}}
@@ -290,7 +293,7 @@ Requirements:
         order_index: 80,
         kind: 'image',
         provider: 'gemini',
-        model_id: 'imagen-3.0-generate-001',
+        model_id: 'gemini-3-pro-image-preview',
         prompt_template: `Create a reference image for a single dungeon prop.
 
 Prop name: {{prop_name}}
@@ -319,7 +322,7 @@ Requirements:
         order_index: 90,
         kind: 'image',
         provider: 'gemini',
-        model_id: 'imagen-3.0-generate-001',
+        model_id: 'gemini-3-pro-image-preview',
         prompt_template: `Create a concept image of a single boss creature/statue/guardian for a dungeon boss room.
 
 Boss name: {{boss_name}}
@@ -499,4 +502,18 @@ export async function seedDefaults() {
         }
         console.log("🌱 [Seed] Default stages verified/seeded.");
     }
+}
+
+// Execute if run directly
+if (require.main === module) {
+    seedDefaults()
+        .then(() => {
+            console.log("✅ [Seed] Seeding completed successfully.");
+            process.exit(0);
+        })
+        .catch(err => {
+            console.error("❌ [Seed] Seeding failed:", err);
+            console.error(err);
+            process.exit(1);
+        });
 }
