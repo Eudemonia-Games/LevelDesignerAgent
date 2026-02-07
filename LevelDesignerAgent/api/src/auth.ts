@@ -91,7 +91,7 @@ export const AuthService = {
             const now = Date.now();
             if (now - lastSeen > 60000) {
                 // Fire and forget update
-                client.query('UPDATE auth_sessions SET last_seen_at = now() WHERE id = $1', [session.id])
+                await client.query('UPDATE auth_sessions SET last_seen_at = now() WHERE id = $1', [session.id])
                     .catch(e => console.error("Failed to update last_seen_at", e));
             }
 

@@ -13,6 +13,7 @@ export const buildServer = async () => {
 
     await server.register(cors, {
         credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         origin: (origin, cb) => {
             const allowedOrigin = process.env.CORS_ORIGIN || process.env.CORS_ORIGINS;
 
