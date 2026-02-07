@@ -1,68 +1,42 @@
-
-// import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ProviderAdapter, ProviderOutput } from './index';
 import { FlowStageTemplate, Run } from '../db/types';
 
 export class NanoBananaProvider implements ProviderAdapter {
-    // private client: GoogleGenerativeAI | null = null; // Unused
-
     async run(_run: Run, stage: FlowStageTemplate, _attempt: number, context: any, prompt: string): Promise<ProviderOutput> {
         const apiKey = context._secrets['GEMINI_API_KEY'];
         if (!apiKey) {
             throw new Error("GEMINI_API_KEY not found in secrets");
         }
 
-        // const genAI = new GoogleGenerativeAI(apiKey);
-        // this.client = genAI;
+        const genAI = new GoogleGenerativeAI(apiKey);
 
-        const modelId = stage.model_id || 'gemini-2.5-flash-image';
-        // const model = genAI.getGenerativeModel({ model: modelId });
+        // User requested "gemini 2.5 flash image", likely meaning the latest flash model capable of images.
+        // gemini-2.0-flash-exp is the current robust preview.
+        const modelId = stage.model_id || 'gemini-2.0-flash-exp';
+        const model = genAI.getGenerativeModel({ model: modelId });
 
-        console.log(`[NanoBanana] Generating image with ${modelId}...`);
+        console.log(`[NanoBanana] Generating content with ${modelId}...`);
 
         try {
-            // Use REST API directly since SDK generateContent doesn't support Imagen 3 yet
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:predict?key=${apiKey}`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        instances: [
-                            {
-                                prompt: prompt,
-                            },
-                        ],
-                        parameters: {
-                            sampleCount: 1, // Generate 1 image
-                            aspectRatio: "16:9" // Default to landscape, could be dynamic
-                        },
-                    }),
-                }
-            );
+            const result = await model.generateContent({
+                contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Google API Error: ${response.status} ${response.statusText} - ${errorText}`);
+            const response = await result.response;
+            const candidates = response.candidates;
+
+            if (!candidates || candidates.length === 0) {
+                throw new Error("No candidates returned");
             }
 
-            const data: any = await response.json();
-
-            // Expected format for Imagen:
-            // { predictions: [ { bytesBase64Encoded: "..." } ] }
-            const predictions = data.predictions;
-
-            if (!predictions || predictions.length === 0) {
-                throw new Error("No predictions returned from Google API");
-            }
-
+            const parts = candidates[0].content.parts;
             const artifacts: any[] = [];
 
-            for (const prediction of predictions) {
-                if (prediction.bytesBase64Encoded) {
-                    const base64 = prediction.bytesBase64Encoded;
+            for (const part of parts) {
+                if (part.inlineData) {
+                    // It's an image
+                    const base64 = part.inlineData.data;
 
                     artifacts.push({
                         kind: 'image',
@@ -72,14 +46,15 @@ export class NanoBananaProvider implements ProviderAdapter {
                 }
             }
 
+            // Fallback: If no inline images, check if it returned text (maybe an error or refusal)
             if (artifacts.length === 0) {
-                // Try fallback format just in case (e.g. some versions return different structure)
-                throw new Error(`No image data found in response: ${JSON.stringify(data).substring(0, 200)}`);
+                const text = response.text();
+                throw new Error(`No images generated. Output text: ${text}`);
             }
 
             return {
                 _artifacts: artifacts,
-                summary: "Image generated successfully via REST API"
+                summary: "Image generated successfully via Gemini SDK"
             };
 
         } catch (e: any) {
