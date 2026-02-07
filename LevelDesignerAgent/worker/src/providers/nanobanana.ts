@@ -13,7 +13,7 @@ export class NanoBananaProvider implements ProviderAdapter {
 
         // User requested "gemini 2.5 flash image", likely meaning the latest flash model capable of images.
         // gemini-2.0-flash-exp is the current robust preview.
-        const modelId = stage.model_id || 'gemini-2.0-flash-exp';
+        const modelId = stage.model_id || 'gemini-2.5-flash-image';
         const model = genAI.getGenerativeModel({ model: modelId });
 
         console.log(`[NanoBanana] Generating content with ${modelId}...`);
