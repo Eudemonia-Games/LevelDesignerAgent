@@ -13,6 +13,8 @@ export function RunDetail({ runId, onClose }: RunDetailProps) {
     const [events, setEvents] = useState<RunEvent[]>([]);
     const [loading, setLoading] = useState(false);
 
+    const [error, setError] = useState<string | null>(null);
+
     const loadData = async () => {
         try {
             const [runData, stageData, eventData] = await Promise.all([
@@ -23,8 +25,10 @@ export function RunDetail({ runId, onClose }: RunDetailProps) {
             setRun(runData.run);
             setStages(stageData.stages);
             setEvents(eventData.events);
-        } catch (err) {
+            setError(null);
+        } catch (err: any) {
             console.error(err);
+            setError(err.message || "Unknown error");
         }
     };
 
@@ -37,7 +41,14 @@ export function RunDetail({ runId, onClose }: RunDetailProps) {
     }, [runId]);
 
     if (!run && loading) return <div>Loading detail...</div>;
-    if (!run) return <div>Run not found</div>;
+    if (!run) return (
+        <div style={{ padding: '20px', color: 'red' }}>
+            <h3>Run not found</h3>
+            <p>Could not load run ID: {runId}</p>
+            {error && <p>Error: {error}</p>}
+            <button onClick={onClose}>Back</button>
+        </div>
+    );
 
     return (
         <div style={{ padding: '20px', height: '100%', overflowY: 'auto', background: 'white' }}>
