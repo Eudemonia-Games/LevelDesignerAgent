@@ -85,7 +85,14 @@ export class OpenAIProvider implements ProviderAdapter {
 
     async run(_run: Run, stage: FlowStageTemplate, _attempt: number, _context: any, prompt: string): Promise<ProviderOutput> {
         const model = stage.model_id || 'gpt-4o';
-        console.log(`[OpenAI] Calling ${model} for stage ${stage.stage_key}...`);
+        // Map Gemini models if needed (legacy/experimental aliases)
+        let modelToUse = model;
+        if (model === 'gemini-2.0-flash') {
+            console.warn(`[OpenAI] Remapping gemini-2.0-flash to gemini-1.5-flash for compatibility`);
+            modelToUse = 'gemini-1.5-flash';
+        }
+
+        console.log(`[OpenAI] Calling ${modelToUse} (requested: ${model}) for stage ${stage.stage_key}...`);
 
         let clientToUse = this.client;
 
@@ -136,7 +143,7 @@ export class OpenAIProvider implements ProviderAdapter {
 
         try {
             const completion = await clientToUse.chat.completions.create({
-                model: model,
+                model: modelToUse,
                 messages: messages as any,
                 ...options
             });
@@ -155,7 +162,8 @@ export class OpenAIProvider implements ProviderAdapter {
             };
         } catch (err: any) {
             console.error(`[OpenAI] Request Failed:`, {
-                model,
+                model: modelToUse, // Log the actual model used
+                requestedModel: model,
                 apiKeyName: this.apiKeyName,
                 error: err.message
             });

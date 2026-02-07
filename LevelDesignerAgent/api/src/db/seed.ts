@@ -7,7 +7,7 @@ const DEFAULT_STAGES: (UpsertStageParams & { stage_key: string })[] = [
         order_index: 10,
         kind: 'llm',
         provider: 'gemini',
-        model_id: 'gemini-2.0-flash', // Using flash for speed/cost in v0, design doc says pro but configurable
+        model_id: 'gemini-1.5-pro', // Using flash for speed/cost in v0, design doc says pro but configurable
         prompt_template: `You are the "Level Design Agent" prompt enhancer.
 
 We are generating ONE boss room interior (grid-based) and ONE exterior building shell, plus a static boss mesh.
@@ -72,7 +72,7 @@ Return JSON ONLY in this exact shape:
         order_index: 20,
         kind: 'llm',
         provider: 'gemini',
-        model_id: 'gemini-2.0-flash',
+        model_id: 'gemini-1.5-pro',
         prompt_template: `You are the "Level Design Agent" layout planner.
 
 Enhanced prompt:
@@ -138,7 +138,7 @@ Return JSON ONLY matching the exact shape required by the system (room, openings
         order_index: 25,
         kind: 'llm',
         provider: 'gemini',
-        model_id: 'gemini-2.0-flash',
+        model_id: 'gemini-1.5-flash',
         prompt_template: `You are the "Level Design Agent" anchor prompt writer.
 
 Enhanced prompt:
@@ -188,7 +188,7 @@ Return JSON ONLY:
         order_index: 40,
         kind: 'llm',
         provider: 'gemini',
-        model_id: 'gemini-2.0-flash',
+        model_id: 'gemini-1.5-pro',
         prompt_template: `You are the "Level Design Agent" placement planner.
 
 You will receive a grid image showing the room layout with labeled coordinates.
@@ -349,6 +349,13 @@ Requirements:
         provider: 'meshy', // Switched to Meshy
         model_id: '',
         prompt_template: '{{exterior_prompt}}',
+        provider_config_json: {
+            "quality_mode": "high_poly",
+            "target_triangles": 30000,
+            "texture_mode": "pbr",
+            "art_style": "realistic",
+            "negative_prompt": "blurry, low quality"
+        },
         breakpoint_after: false
     },
     {
@@ -360,9 +367,11 @@ Requirements:
         model_id: 'meshy-4',
         prompt_template: '{{tile_visual_prompt}} <GEOMETRY_REF:{{tile_geometry_role}}>',
         provider_config_json: {
-            "quality_mode": "low_poly",
-            "target_triangles": 7000,
-            "texture_mode": "non_pbr_ok"
+            "quality_mode": "high_poly", // Options: low_poly, high_poly
+            "target_triangles": 15000,
+            "texture_mode": "pbr", // Options: pbr, non_pbr_ok
+            "art_style": "realistic", // Options: realistic, cartoon, low-poly
+            "negative_prompt": "blurry, low quality, text, watermark"
         },
         breakpoint_after: false
     },
@@ -374,6 +383,12 @@ Requirements:
         provider: 'meshy',
         model_id: 'meshy-4',
         prompt_template: '{{prop_visual_prompt}}',
+        provider_config_json: {
+            "quality_mode": "high_poly",
+            "target_triangles": 10000,
+            "texture_mode": "pbr",
+            "art_style": "realistic"
+        },
         breakpoint_after: false
     },
     {
@@ -384,6 +399,12 @@ Requirements:
         provider: 'meshy',
         model_id: 'meshy-4',
         prompt_template: '{{boss_visual_prompt}}',
+        provider_config_json: {
+            "quality_mode": "high_poly",
+            "target_triangles": 50000,
+            "texture_mode": "pbr",
+            "art_style": "realistic"
+        },
         breakpoint_after: false
     },
     {
