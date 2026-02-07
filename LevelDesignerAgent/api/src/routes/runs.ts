@@ -3,7 +3,7 @@ import { RunsDb, CreateRunParams } from '../db/runs';
 
 export async function runsRoutes(server: FastifyInstance) {
     // List Runs
-    server.get('/api/v1/runs', async (req: FastifyRequest<{ Querystring: { limit?: number, offset?: number } }>, reply: FastifyReply) => {
+    server.get('/api/v1/runs', async (req: FastifyRequest<{ Querystring: { limit?: number, offset?: number } }>, _reply: FastifyReply) => {
         const runs = await RunsDb.listRuns(req.query);
         return { runs };
     });
@@ -35,21 +35,21 @@ export async function runsRoutes(server: FastifyInstance) {
     });
 
     // Get Stage Runs
-    server.get('/api/v1/runs/:id/stages', async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    server.get('/api/v1/runs/:id/stages', async (req: FastifyRequest<{ Params: { id: string } }>, _reply: FastifyReply) => {
         const { id } = req.params;
         const stages = await RunsDb.getStageRuns(id);
         return { stages };
     });
 
     // Get Run Events
-    server.get('/api/v1/runs/:id/events', async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    server.get('/api/v1/runs/:id/events', async (req: FastifyRequest<{ Params: { id: string } }>, _reply: FastifyReply) => {
         const { id } = req.params;
         const events = await RunsDb.getRunEvents(id);
         return { events };
     });
 
     // Resume Run
-    server.post('/api/v1/runs/:id/resume', async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    server.post('/api/v1/runs/:id/resume', async (req: FastifyRequest<{ Params: { id: string } }>, _reply: FastifyReply) => {
         const { id } = req.params;
         await RunsDb.resumeRun(id);
         return { success: true };

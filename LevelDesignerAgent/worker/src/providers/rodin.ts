@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import { getSecret } from '../db/secrets';
 
 export interface RodinProviderOptions {
@@ -28,7 +27,7 @@ export class RodinAdapter {
         };
     }
 
-    async generate3D(prompt: string): Promise<string> {
+    async generate3D(_prompt: string): Promise<string> {
         // Placeholder implementation for Rodin
         // Actual API implementation would go here similarly to Meshy
         // For now, let's verify auth exists and throw stub error or implement if docs available.

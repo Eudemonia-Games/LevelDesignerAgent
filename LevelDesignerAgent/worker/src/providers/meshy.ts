@@ -4,6 +4,8 @@ import { FlowStageTemplate, Run } from '../db/types';
 export class MeshyProvider implements ProviderAdapter {
     private apiKey: string | undefined;
 
+    private static instance: MeshyProvider | null = null;
+
     constructor() {
         this.apiKey = process.env.MESHY_API_KEY;
         if (!this.apiKey) {
@@ -11,15 +13,16 @@ export class MeshyProvider implements ProviderAdapter {
         }
     }
 
-    async run(run: Run, stage: FlowStageTemplate, attempt: number, context: any, prompt: string): Promise<ProviderOutput> {
-        if (!this.apiKey) {
-            throw new Error("MESHY_API_KEY not configured");
+    static getInstance(): MeshyProvider {
+        if (!MeshyProvider.instance) {
+            MeshyProvider.instance = new MeshyProvider();
         }
+        return MeshyProvider.instance;
+    }
 
-        const modelId = stage.model_id || 'meshy-4'; // or whatever the current model is
-        console.log(`[Meshy] Calling ${modelId} for stage ${stage.stage_key}...`);
+    async generate3D(prompt: string, options: any = {}): Promise<any> {
+        if (!this.apiKey) throw new Error("MESHY_API_KEY not configured");
 
-        // Start generation
         const startResp = await fetch('https://api.meshy.ai/v2/text-to-3d', {
             method: 'POST',
             headers: {
@@ -27,10 +30,11 @@ export class MeshyProvider implements ProviderAdapter {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                mode: 'preview', // fast generation for testing
+                mode: 'preview',
                 prompt: prompt,
                 art_style: 'realistic',
-                should_remesh: true
+                should_remesh: true,
+                ...options
             })
         });
 
@@ -62,6 +66,14 @@ export class MeshyProvider implements ProviderAdapter {
         if (!taskData || taskData.status !== 'SUCCEEDED') {
             throw new Error("Meshy Task Timed Out");
         }
+        return taskData;
+    }
+
+    async run(run: Run, stage: FlowStageTemplate, _attempt: number, _context: any, prompt: string): Promise<ProviderOutput> {
+        const modelId = stage.model_id || 'meshy-4';
+        console.log(`[Meshy] Calling ${modelId} for stage ${stage.stage_key}...`);
+
+        const taskData = await this.generate3D(prompt);
 
         // Download GLB
         const glbUrl = taskData.model_urls.glb;

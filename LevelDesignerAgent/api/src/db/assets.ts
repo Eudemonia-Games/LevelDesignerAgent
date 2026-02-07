@@ -142,7 +142,7 @@ export const AssetsDb = {
         }
     },
 
-    async getFileBuffer(r2Key: string): Promise<Buffer | null> {
+    async getFileBuffer(_r2Key: string): Promise<Buffer | null> {
         // In a real R2 impl, we'd fetch from S3/R2.
         // For Phase 7/8/9 stubbing, we might have simulated it or stored it in DB?
         // Wait, `worker/src/db/assets.ts` `createAssetFile` does:

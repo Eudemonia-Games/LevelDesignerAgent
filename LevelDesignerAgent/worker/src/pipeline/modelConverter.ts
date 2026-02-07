@@ -1,6 +1,7 @@
-import { Document, Node, WebIO } from '@gltf-transform/core';
-import { center, dedup, metalRough, weld } from '@gltf-transform/functions';
+import { WebIO } from '@gltf-transform/core';
+import { center, dedup, weld } from '@gltf-transform/functions';
 import { KHRDracoMeshCompression } from '@gltf-transform/extensions';
+// @ts-ignore
 import draco3d from 'draco3dgltf';
 
 // Define options interface

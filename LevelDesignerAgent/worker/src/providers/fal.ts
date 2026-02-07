@@ -3,6 +3,8 @@ import { FlowStageTemplate, Run } from '../db/types';
 import * as fal from '@fal-ai/serverless-client';
 
 export class FalProvider implements ProviderAdapter {
+    private static instance: FalProvider | null = null;
+
     constructor() {
         if (!process.env.FAL_KEY) {
             console.warn("FAL_KEY not set. FalProvider will fail if used.");
@@ -13,22 +15,23 @@ export class FalProvider implements ProviderAdapter {
         }
     }
 
-    async run(run: Run, stage: FlowStageTemplate, attempt: number, context: any, prompt: string): Promise<ProviderOutput> {
-        if (!process.env.FAL_KEY) {
-            throw new Error("FAL_KEY not configured");
+    static getInstance(): FalProvider {
+        if (!FalProvider.instance) {
+            FalProvider.instance = new FalProvider();
         }
+        return FalProvider.instance;
+    }
 
-        const model = stage.model_id || 'fal-ai/flux-pro';
-        console.log(`[Fal] Calling ${model} for stage ${stage.stage_key}...`);
+    async generateImage(prompt: string, model: string = 'fal-ai/flux-pro', options: any = {}): Promise<any> {
+        if (!process.env.FAL_KEY) throw new Error("FAL_KEY not configured");
 
-        // Fal usually returns { images: [{ url: ... }] } for image models
-        const result: any = await fal.subscribe(model, {
+        return await fal.subscribe(model, {
             input: {
                 prompt: prompt,
-                // Add common params
                 image_size: 'landscape_4_3',
                 num_inference_steps: 25,
-                guidance_scale: 3.5
+                guidance_scale: 3.5,
+                ...options
             },
             logs: true,
             onQueueUpdate: (update) => {
@@ -37,6 +40,13 @@ export class FalProvider implements ProviderAdapter {
                 }
             }
         });
+    }
+
+    async run(run: Run, stage: FlowStageTemplate, _attempt: number, _context: any, prompt: string): Promise<ProviderOutput> {
+        const model = stage.model_id || 'fal-ai/flux-pro';
+        console.log(`[Fal] Calling ${model} for stage ${stage.stage_key}...`);
+
+        const result = await this.generateImage(prompt, model);
 
         const artifacts: any[] = [];
 

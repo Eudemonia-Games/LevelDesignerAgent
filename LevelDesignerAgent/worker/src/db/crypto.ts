@@ -1,8 +1,8 @@
 import * as crypto from 'crypto';
 
 const ALGORITHM = 'aes-256-gcm';
-const IV_LENGTH = 16;
-const TAG_LENGTH = 16;
+// const IV_LENGTH = 16;
+// const TAG_LENGTH = 16;
 const MASTER_KEY_B64 = process.env.SECRETS_MASTER_KEY;
 
 if (!MASTER_KEY_B64) {

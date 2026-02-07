@@ -12,6 +12,7 @@ export interface FlowStageTemplate {
     provider_config_json: any;
     output_schema_json: any;
     breakpoint_after: boolean;
+    routing_rules_json?: any[]; // Keep as any[] or import RoutingRule? Any implies lazy.
 }
 
 export interface Run {

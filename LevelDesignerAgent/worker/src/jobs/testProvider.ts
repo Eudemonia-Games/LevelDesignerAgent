@@ -1,9 +1,5 @@
 import { TestProviderRequest, TestProviderResult } from '@lda/shared';
-import { OpenAIAdapter } from '../providers/openai';
-import { GeminiAdapter } from '../providers/gemini';
-import { FalAdapter } from '../providers/fal';
-import { MeshyAdapter } from '../providers/meshy';
-import { RodinAdapter } from '../providers/rodin';
+import { OpenAIAdapter, GeminiAdapter, FalAdapter, MeshyAdapter, RodinAdapter } from '../providers/adapters';
 
 // This function processes the test_provider_call job
 export async function processTestProviderJob(job: { id: string, payload: TestProviderRequest }): Promise<TestProviderResult> {

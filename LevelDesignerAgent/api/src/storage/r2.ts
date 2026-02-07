@@ -6,7 +6,7 @@ let s3Client: S3Client | null = null;
 let clientPromise: Promise<S3Client> | null = null;
 
 async function getSecretValue(key: string): Promise<string | undefined> {
-    const secrets = await SecretsService.getAllSecrets();
+    // const secrets = await SecretsService.getAllSecrets();
     // SecretsService returns masked values in getAllSecrets? 
     // Wait, getAllSecrets returns masked values.
     // We need an internal method to get raw decrypted values.

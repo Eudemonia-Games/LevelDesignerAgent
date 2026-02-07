@@ -34,7 +34,7 @@ export interface FlowStageTemplate {
     provider_config_json: Record<string, any>;
     output_schema_json: Record<string, any>;
     breakpoint_after: boolean;
-    routing_rules_json: RoutingRule[];
+    routing_rules_json?: RoutingRule[];
     created_at: string;
     updated_at: string;
 }

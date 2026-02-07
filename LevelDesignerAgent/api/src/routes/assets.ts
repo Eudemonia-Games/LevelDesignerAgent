@@ -4,7 +4,7 @@ import { AssetsDb } from '../db/assets';
 
 export async function assetsRoutes(server: FastifyInstance) {
     // List Assets
-    server.get('/api/v1/assets', async (req: FastifyRequest<{ Querystring: { limit?: number, offset?: number, kind?: string } }>, reply: FastifyReply) => {
+    server.get('/api/v1/assets', async (req: FastifyRequest<{ Querystring: { limit?: number, offset?: number, kind?: string } }>, _reply: FastifyReply) => {
         // We need to implement listAssets in AssetsDb
         const assets = await AssetsDb.listAssets(req.query);
         return { assets };

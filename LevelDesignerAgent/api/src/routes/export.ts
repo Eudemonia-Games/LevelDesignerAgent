@@ -81,7 +81,7 @@ export async function exportRoutes(server: FastifyInstance) {
     });
 
     // GET /api/v1/runs/:id/manifest
-    server.get('/api/v1/runs/:id/manifest', async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    server.get('/api/v1/runs/:id/manifest', async (req: FastifyRequest<{ Params: { id: string } }>, _reply: FastifyReply) => {
         const { id } = req.params;
         const assets = await AssetsDb.getAssetsByRunId(id);
         const manifest = {
