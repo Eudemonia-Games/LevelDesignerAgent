@@ -7,7 +7,7 @@ const DEFAULT_STAGES: (UpsertStageParams & { stage_key: string })[] = [
         order_index: 10,
         kind: 'llm',
         provider: 'gemini',
-        model_id: 'gemini-1.5-pro', // Using flash for speed/cost in v0, design doc says pro but configurable
+        model_id: 'gemini-3-pro-preview', // Using flash for speed/cost in v0, design doc says pro but configurable
         prompt_template: `You are the "Level Design Agent" prompt enhancer.
 
 We are generating ONE boss room interior (grid-based) and ONE exterior building shell, plus a static boss mesh.
@@ -72,7 +72,7 @@ Return JSON ONLY in this exact shape:
         order_index: 20,
         kind: 'llm',
         provider: 'gemini',
-        model_id: 'gemini-1.5-pro',
+        model_id: 'gemini-3-pro-preview',
         prompt_template: `You are the "Level Design Agent" layout planner.
 
 Enhanced prompt:
@@ -138,7 +138,7 @@ Return JSON ONLY matching the exact shape required by the system (room, openings
         order_index: 25,
         kind: 'llm',
         provider: 'gemini',
-        model_id: 'gemini-1.5-flash',
+        model_id: 'gemini-3-flash-preview',
         prompt_template: `You are the "Level Design Agent" anchor prompt writer.
 
 Enhanced prompt:
@@ -188,7 +188,7 @@ Return JSON ONLY:
         order_index: 40,
         kind: 'llm',
         provider: 'gemini',
-        model_id: 'gemini-1.5-pro',
+        model_id: 'gemini-3-pro-preview',
         prompt_template: `You are the "Level Design Agent" placement planner.
 
 You will receive a grid image showing the room layout with labeled coordinates.

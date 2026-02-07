@@ -87,10 +87,10 @@ export class OpenAIProvider implements ProviderAdapter {
         const model = stage.model_id || 'gpt-4o';
         // Map Gemini models if needed (legacy/experimental aliases)
         let modelToUse = model;
-        if (model === 'gemini-2.0-flash') {
-            console.warn(`[OpenAI] Remapping gemini-2.0-flash to gemini-1.5-flash for compatibility`);
-            modelToUse = 'gemini-1.5-flash';
-        }
+        // if (model === 'gemini-2.0-flash') {
+        //     console.warn(`[OpenAI] Remapping gemini-2.0-flash to gemini-1.5-flash for compatibility`);
+        //     modelToUse = 'gemini-1.5-flash';
+        // }
 
         console.log(`[OpenAI] Calling ${modelToUse} (requested: ${model}) for stage ${stage.stage_key}...`);
 
@@ -141,12 +141,32 @@ export class OpenAIProvider implements ProviderAdapter {
 
         messages.push({ role: 'user', content: userContent });
 
+        // Sanitize options to only include valid OpenAI parameters
+        // We do NOT want to pass the entire context as options!
+        const validOptions: any = {};
+        const allowedKeys = ['temperature', 'top_p', 'max_tokens', 'presence_penalty', 'frequency_penalty', 'logit_bias', 'response_format', 'seed', 'stop', 'stream', 'tools', 'tool_choice', 'user'];
+
+        for (const key of allowedKeys) {
+            if (options[key] !== undefined) {
+                validOptions[key] = options[key];
+            }
+        }
+
+        // Add response_format if output_schema_json is present in context (from stage template)
+        // Check if we need to enforce JSON mode for Gemini
+        // Gemini generally follows instruction, but let's see if we can use response_format.
+        // For now, let's keep it simple and just use the prompt instructions.
+
+        const payload = {
+            model: modelToUse,
+            messages: messages as any,
+            ...validOptions
+        };
+
+        console.log(`[OpenAI] Payload keys:`, Object.keys(payload));
+
         try {
-            const completion = await clientToUse.chat.completions.create({
-                model: modelToUse,
-                messages: messages as any,
-                ...options
-            });
+            const completion = await clientToUse.chat.completions.create(payload);
 
             const content = completion.choices[0].message.content || '';
 
