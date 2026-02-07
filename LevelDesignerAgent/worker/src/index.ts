@@ -13,6 +13,7 @@ import { OpenAIProvider } from './providers/openai';
 import { FalProvider } from './providers/fal';
 import { MeshyProvider } from './providers/meshy';
 import { GeminiProvider } from './providers/gemini';
+import { InternalProvider } from './providers/internal';
 
 registerProvider('openai', new OpenAIProvider({ apiKeyName: 'OPENAI_API_KEY' }));
 registerProvider('gemini', new GeminiProvider());
