@@ -239,7 +239,7 @@ Return JSON ONLY matching the expected schema (pillar_instances, wall_separator_
         order_index: 50,
         kind: 'image',
         provider: 'gemini',
-        model_id: 'gemini-2.0-flash-exp', // User requested 2.5 flash (2.0 flash) // Using Gemini (Imagen 3)
+        model_id: 'gemini-1.5-flash', // Using Gemini (Imagen 3)
         prompt_template: '{{exterior_image_prompt}}',
         input_bindings_json: {
             "exterior_image_prompt": "$.context.S2_ANCHOR_PROMPTS.exterior_image_prompt"
@@ -252,7 +252,7 @@ Return JSON ONLY matching the expected schema (pillar_instances, wall_separator_
         order_index: 60,
         kind: 'image',
         provider: 'gemini',
-        model_id: 'gemini-2.0-flash-exp', // User requested 2.5 flash (2.0 flash)
+        model_id: 'gemini-1.5-flash',
         prompt_template: '{{interior_style_image_prompt}}',
         input_bindings_json: {
             "interior_style_image_prompt": "$.context.S2_ANCHOR_PROMPTS.interior_style_image_prompt"
@@ -265,7 +265,7 @@ Return JSON ONLY matching the expected schema (pillar_instances, wall_separator_
         order_index: 70,
         kind: 'image',
         provider: 'gemini', // Design doc says image batch, usually Gemini or Fal
-        model_id: 'gemini-2.0-flash-exp', // User requested 2.5 flash (2.0 flash) // High fidelity
+        model_id: 'gemini-1.5-flash', // High fidelity
         prompt_template: `Create a clean, well-lit reference image of a dungeon tile.
 
 Tile role: {{tile_role}}
@@ -294,7 +294,7 @@ Requirements:
         order_index: 80,
         kind: 'image',
         provider: 'gemini',
-        model_id: 'gemini-2.0-flash-exp', // User requested 2.5 flash (2.0 flash)
+        model_id: 'gemini-1.5-flash',
         prompt_template: `Create a reference image for a single dungeon prop.
 
 Prop name: {{prop_name}}
@@ -323,7 +323,7 @@ Requirements:
         order_index: 90,
         kind: 'image',
         provider: 'gemini',
-        model_id: 'gemini-2.0-flash-exp', // User requested 2.5 flash (2.0 flash)
+        model_id: 'gemini-1.5-flash',
         prompt_template: `Create a concept image of a single boss creature/statue/guardian for a dungeon boss room.
 
 Boss name: {{boss_name}}
@@ -360,6 +360,9 @@ Requirements:
             "art_style": "realistic",
             "negative_prompt": "blurry, low quality"
         },
+        input_bindings_json: {
+            "exterior_prompt": "$.context.S2_ANCHOR_PROMPTS.exterior_image_prompt"
+        },
         breakpoint_after: false
     },
     {
@@ -377,6 +380,10 @@ Requirements:
             "art_style": "realistic", // Options: realistic, cartoon, low-poly
             "negative_prompt": "blurry, low quality, text, watermark"
         },
+        input_bindings_json: {
+            "tile_visual_prompt": "$.context.S7_TILE_IMAGES.tile_visual_prompt",
+            "tile_geometry_role": "$.context.S7_TILE_IMAGES.tile_geometry_role"
+        },
         breakpoint_after: false
     },
     {
@@ -392,6 +399,9 @@ Requirements:
             "target_triangles": 10000,
             "texture_mode": "pbr",
             "art_style": "realistic"
+        },
+        input_bindings_json: {
+            "prop_visual_prompt": "$.context.S8_PROP_IMAGES.prop_visual_prompt"
         },
         breakpoint_after: false
     },

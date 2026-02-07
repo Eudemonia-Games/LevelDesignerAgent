@@ -239,17 +239,17 @@ export async function executeRun(run: Run) {
             }
         }
 
-        await updateStageRunSuccess(sr.id, output, producedArtifacts);
+        // Sanitize output to prevent OOM (remove large binary artifacts)
+        const sanitizedOutput = { ...output };
+        delete sanitizedOutput._artifacts;
+
+        await updateStageRunSuccess(sr.id, sanitizedOutput, producedArtifacts);
         await emitRunEvent(run.id, 'info', 'Stage succeeded', { stage_key: nextStage.stage_key });
 
         // 8. Update Context
         // Safe update of JSON context
         const newContext = { ...run.context_json };
         if (!newContext.context) newContext.context = {};
-
-        // Sanitize output to prevent OOM (remove large binary artifacts)
-        const sanitizedOutput = { ...output };
-        delete sanitizedOutput._artifacts;
 
         newContext.context[nextStage.stage_key] = {
             output: sanitizedOutput,
