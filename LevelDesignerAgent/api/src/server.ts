@@ -51,8 +51,9 @@ export const buildServer = async () => {
         if (req.url.startsWith('/health')) return;
         if (req.url === '/auth/login') return;
 
-        // Public Library Access
+        // Public Library Access (Assets & Runs)
         if (req.method === 'GET' && req.url.startsWith('/api/v1/assets')) return;
+        if (req.method === 'GET' && req.url.startsWith('/api/v1/runs')) return;
 
         // Check Auth
         const isAuthenticated = await AuthService.verifySession(req);
