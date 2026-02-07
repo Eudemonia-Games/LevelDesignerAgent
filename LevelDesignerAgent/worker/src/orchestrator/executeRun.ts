@@ -144,8 +144,32 @@ export async function executeRun(run: Run) {
     }
 
     // 4. Create/Advance StageRun
+
+    // 4.1 Fetch Secrets
+    const { SecretsService } = await import('../db/secrets');
+    const secretsMap: Record<string, string> = {};
+
+    // Determine which secrets are needed based on provider
+    // This is a simple mapping for now. Could be smarter/metadata driven.
+    const provider = nextStage.provider;
+    if (provider === 'openai') {
+        const key = await SecretsService.getDecryptedSecret('OPENAI_API_KEY');
+        if (key) secretsMap['OPENAI_API_KEY'] = key;
+    } else if (provider === 'gemini') {
+        const key = await SecretsService.getDecryptedSecret('GEMINI_API_KEY');
+        if (key) secretsMap['GEMINI_API_KEY'] = key;
+    } else if (provider === 'fal') {
+        const key = await SecretsService.getDecryptedSecret('FAL_API_KEY');
+        if (key) secretsMap['FAL_API_KEY'] = key;
+    } else if (provider === 'meshy' || provider === 'rodin') {
+        const key = await SecretsService.getDecryptedSecret('MESHY_API_KEY');
+        if (key) secretsMap['MESHY_API_KEY'] = key;
+    }
+
     // Build Context
     const context = buildRunContext(run, stageRuns);
+    // Inject secrets into context (hidden property convention)
+    (context as any)._secrets = secretsMap;
 
     // Resolve Prompt
     let resolvedPrompt = "";

@@ -1,5 +1,5 @@
 import { TestProviderRequest, TestProviderResult } from '@lda/shared';
-import { OpenAIAdapter, GeminiAdapter, FalAdapter, MeshyAdapter, RodinAdapter } from '../providers/adapters';
+import { OpenAIAdapter, FalAdapter, MeshyAdapter } from '../providers/adapters';
 
 // This function processes the test_provider_call job
 export async function processTestProviderJob(job: { id: string, payload: TestProviderRequest }): Promise<TestProviderResult> {
@@ -14,7 +14,11 @@ export async function processTestProviderJob(job: { id: string, payload: TestPro
                 resultData = await new OpenAIAdapter().generateText(prompt, model, options);
                 break;
             case 'gemini':
-                resultData = await GeminiAdapter.getInstance().generateText(prompt, model, options);
+                // Gemini uses OpenAIAdapter with specific config
+                resultData = await new OpenAIAdapter({
+                    apiKeyName: 'GEMINI_API_KEY',
+                    baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/'
+                }).generateText(prompt, model, options);
                 break;
             case 'fal':
                 resultData = await FalAdapter.getInstance().generateImage(prompt, model, options);
@@ -23,8 +27,7 @@ export async function processTestProviderJob(job: { id: string, payload: TestPro
                 resultData = await MeshyAdapter.getInstance().generate3D(prompt, options);
                 break;
             case 'rodin':
-                resultData = await RodinAdapter.getInstance().generate3D(prompt);
-                break;
+                throw new Error("Rodin provider not yet implemented");
             default:
                 throw new Error(`Unknown provider: ${provider}`);
         }

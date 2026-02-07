@@ -19,9 +19,48 @@ export class OpenAIProvider implements ProviderAdapter {
     }
 
     async generateText(prompt: string, model: string = 'gpt-4o', options: any = {}): Promise<any> {
-        if (!this.client) throw new Error(`${this.apiKeyName} not configured`);
+        let clientToUse = this.client;
 
-        const completion = await this.client.chat.completions.create({
+        // Check for injected secrets in options (passed from run context)
+        // We look for options._secrets[this.apiKeyName]
+        if (options && options._secrets && options._secrets[this.apiKeyName]) {
+            const secretKey = options._secrets[this.apiKeyName];
+            // Create temporary client
+            // If baseURL is needed, we need to know it. 
+            // We can store config in the instance to reuse baseURL.
+            // But for now, let's assume if we are injecting secrets, we might miss baseURL if it was set in constructor config but not saved?
+            // Constructor saves apiKeyName. It passes baseURL to client. 
+            // We should save baseURL in the class to reuse it.
+            // BUT, we can just try to use the secret.
+            // For Gemini, baseURL is crucial.
+
+            // HACK: Re-read config from env if possible or save it?
+            // Let's modify constructor to save baseURL.
+            // For now, let's just use the client if it exists, OR create new one.
+            // Actually, if we are using Secrets, `this.client` might be null!
+
+            // Let's rely on `this.client` being configured with *something* (e.g. env) OR we create one here.
+            // If we create one here, we need baseURL.
+
+            // Let's check if this.client exists. If so, and key matches, use it.
+            // But the whole point is `this.client` might NOT exist if env var is missing.
+
+            // We need to know the baseURL for Gemini.
+            // We can check `this.apiKeyName`. If it's GEMINI_API_KEY, we know the URL.
+            let baseURL = undefined;
+            if (this.apiKeyName === 'GEMINI_API_KEY') {
+                baseURL = 'https://generativelanguage.googleapis.com/v1beta/openai/';
+            }
+
+            clientToUse = new OpenAI({
+                apiKey: secretKey,
+                baseURL: baseURL
+            });
+        }
+
+        if (!clientToUse) throw new Error(`${this.apiKeyName} not configured (Env or DB Secret)`);
+
+        const completion = await clientToUse.chat.completions.create({
             model: model,
             messages: [
                 { role: 'system', content: "You are a Level Design Assistant." },
@@ -48,9 +87,11 @@ export class OpenAIProvider implements ProviderAdapter {
         const model = stage.model_id || 'gpt-4o';
         console.log(`[OpenAI] Calling ${model} for stage ${stage.stage_key}...`);
 
-        if (!this.client) throw new Error(`${this.apiKeyName} not configured`);
+        // if (!this.client) throw new Error(`${this.apiKeyName} not configured`); // Handled in generateText
 
-        const options: any = {};
+        const options: any = {
+            ..._context // Pass full context including _secrets
+        };
 
         // Handle Vision / Attachments
         // We look for 'image_url' in options or specific context bindings if needed, 

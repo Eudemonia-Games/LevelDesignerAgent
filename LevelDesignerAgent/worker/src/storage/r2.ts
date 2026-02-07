@@ -1,24 +1,21 @@
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { getSecret } from '../db/secrets';
+import { SecretsService } from '../db/secrets';
 
 let s3Client: S3Client | null = null;
-let clientPromise: Promise<S3Client> | null = null;
 
-async function createS3Client(): Promise<S3Client> {
-    const R2_ENDPOINT = await getSecret('CF_R2_ENDPOINT');
-    const R2_ACCESS_KEY_ID = await getSecret('CF_R2_ACCESS_KEY_ID');
-    const R2_SECRET_ACCESS_KEY = await getSecret('CF_R2_SECRET_ACCESS_KEY');
+async function getClient(): Promise<S3Client> {
+    if (s3Client) return s3Client;
 
-    // Bucket name is needed for operations but not client initialization technically,
-    // but usually nice to fail fast if missing.
-    // However, bucket name is used per operation.
+    const R2_ENDPOINT = process.env.CF_R2_ENDPOINT || await SecretsService.getDecryptedSecret('CF_R2_ENDPOINT');
+    const R2_ACCESS_KEY_ID = process.env.CF_R2_ACCESS_KEY_ID || await SecretsService.getDecryptedSecret('CF_R2_ACCESS_KEY_ID');
+    const R2_SECRET_ACCESS_KEY = process.env.CF_R2_SECRET_ACCESS_KEY || await SecretsService.getDecryptedSecret('CF_R2_SECRET_ACCESS_KEY');
 
     if (!R2_ENDPOINT || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
-        throw new Error("R2 configuration missing in Secrets Vault (CF_R2_ENDPOINT, CF_R2_ACCESS_KEY_ID, CF_R2_SECRET_ACCESS_KEY)");
+        throw new Error("R2 configuration missing (Env or Secrets Vault)");
     }
 
-    return new S3Client({
+    s3Client = new S3Client({
         region: 'auto',
         endpoint: R2_ENDPOINT,
         credentials: {
@@ -26,24 +23,15 @@ async function createS3Client(): Promise<S3Client> {
             secretAccessKey: R2_SECRET_ACCESS_KEY
         }
     });
-}
 
-function getS3Client(): Promise<S3Client> {
-    if (s3Client) return Promise.resolve(s3Client);
-    if (!clientPromise) {
-        clientPromise = createS3Client().then(c => {
-            s3Client = c;
-            return c;
-        });
-    }
-    return clientPromise;
+    return s3Client;
 }
 
 export async function uploadAsset(key: string, body: Buffer | string, contentType: string = 'application/octet-stream'): Promise<void> {
-    const bucket = await getSecret('CF_R2_BUCKET_NAME');
-    if (!bucket) throw new Error("CF_R2_BUCKET_NAME not set in Secrets Vault");
+    const bucket = process.env.CF_R2_BUCKET_NAME || await SecretsService.getDecryptedSecret('CF_R2_BUCKET_NAME');
+    if (!bucket) throw new Error("CF_R2_BUCKET_NAME not set");
 
-    const client = await getS3Client();
+    const client = await getClient();
     const command = new PutObjectCommand({
         Bucket: bucket,
         Key: key,
@@ -55,15 +43,14 @@ export async function uploadAsset(key: string, body: Buffer | string, contentTyp
 }
 
 export async function getSignedDownloadUrl(key: string, expiresInSeconds: number = 3600): Promise<string> {
-    const bucket = await getSecret('CF_R2_BUCKET_NAME');
-    if (!bucket) throw new Error("CF_R2_BUCKET_NAME not set in Secrets Vault");
+    const bucket = process.env.CF_R2_BUCKET_NAME || await SecretsService.getDecryptedSecret('CF_R2_BUCKET_NAME');
+    if (!bucket) throw new Error("CF_R2_BUCKET_NAME not set");
 
-    const client = await getS3Client();
+    const client = await getClient();
     const command = new GetObjectCommand({
         Bucket: bucket,
         Key: key
     });
 
-    // getSignedUrl takes client instance as first arg
     return await getSignedUrl(client, command, { expiresIn: expiresInSeconds });
 }

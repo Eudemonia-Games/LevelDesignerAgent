@@ -1,38 +1,76 @@
-import * as crypto from 'crypto';
 
-const ALGORITHM = 'aes-256-gcm';
-// const IV_LENGTH = 16;
-// const TAG_LENGTH = 16;
-const MASTER_KEY_B64 = process.env.SECRETS_MASTER_KEY;
+import { randomBytes, createCipheriv, createDecipheriv } from 'crypto';
 
-if (!MASTER_KEY_B64) {
-    // In dev/test, might not be set. But for worker to decrypt, it must be set.
-    // We throw error only when trying to decrypt if key is missing.
+const ALGO_AES_256_GCM = 'AES-256-GCM';
+
+export interface EncryptedSecret {
+    algo: string;
+    ciphertext_base64: string;
+    nonce_base64: string;
+    tag_base64: string; // Authentication tag for GCM
 }
 
-export function decryptSecret(row: { key: string, algo: string, ciphertext_base64: string, nonce_base64: string, tag_base64: string }): string {
-    if (!MASTER_KEY_B64) {
-        throw new Error("SECRETS_MASTER_KEY not set in env");
+/**
+ * Parses and validates the SECRETS_MASTER_KEY from env.
+ * Complies with "Fail closed" rule.
+ */
+export function parseMasterKey(): Buffer {
+    const rawKey = process.env.SECRETS_MASTER_KEY;
+    if (!rawKey) {
+        throw new Error("Missing SECRETS_MASTER_KEY env var");
     }
 
-    if (row.algo !== 'AES-256-GCM') {
-        throw new Error(`Unsupported algorithm: ${row.algo}`);
+    let keyBuffer: Buffer;
+    try {
+        keyBuffer = Buffer.from(rawKey, 'base64');
+    } catch (e) {
+        throw new Error("Invalid SECRETS_MASTER_KEY (not base64)");
     }
 
-    const masterKey = Buffer.from(MASTER_KEY_B64, 'base64');
-    if (masterKey.length !== 32) {
-        throw new Error("SECRETS_MASTER_KEY must be 32 bytes (base64 encoded)");
+    if (keyBuffer.length !== 32) {
+        throw new Error(`Invalid SECRETS_MASTER_KEY length: got ${keyBuffer.length} bytes, expected 32`);
     }
 
-    const iv = Buffer.from(row.nonce_base64, 'base64');
-    const tag = Buffer.from(row.tag_base64, 'base64');
-    const encryptedText = Buffer.from(row.ciphertext_base64, 'base64');
+    return keyBuffer;
+}
 
-    const decipher = crypto.createDecipheriv(ALGORITHM, masterKey, iv);
+/**
+ * Encrypts plaintext using AES-256-GCM.
+ */
+export function encryptSecret(plaintext: string): EncryptedSecret {
+    const key = parseMasterKey();
+    const nonce = randomBytes(12); // GCM standard nonce length
+
+    const cipher = createCipheriv('aes-256-gcm', key, nonce);
+
+    let encrypted = cipher.update(plaintext, 'utf8', 'base64');
+    encrypted += cipher.final('base64');
+
+    const authTag = cipher.getAuthTag();
+
+    return {
+        algo: ALGO_AES_256_GCM,
+        ciphertext_base64: encrypted,
+        nonce_base64: nonce.toString('base64'),
+        tag_base64: authTag.toString('base64')
+    };
+}
+
+/**
+ * Decrypts a secret record.
+ */
+export function decryptSecret(record: { ciphertext_base64: string, nonce_base64: string, tag_base64: string }): string {
+    const key = parseMasterKey();
+
+    const nonce = Buffer.from(record.nonce_base64, 'base64');
+    const ciphertext = Buffer.from(record.ciphertext_base64, 'base64');
+    const tag = Buffer.from(record.tag_base64, 'base64');
+
+    const decipher = createDecipheriv('aes-256-gcm', key, nonce);
     decipher.setAuthTag(tag);
 
-    let decrypted = decipher.update(encryptedText);
-    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    let plaintext = decipher.update(ciphertext, undefined, 'utf8');
+    plaintext += decipher.final('utf8');
 
-    return decrypted.toString('utf8');
+    return plaintext;
 }

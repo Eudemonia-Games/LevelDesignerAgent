@@ -42,7 +42,12 @@ export class MeshyProvider implements ProviderAdapter {
     }
 
     private async _generate3DInternal(prompt: string, options: any = {}): Promise<any> {
-        if (!this.apiKey) throw new Error("MESHY_API_KEY not configured");
+        let apiKey = this.apiKey;
+        if (options && options._secrets && options._secrets['MESHY_API_KEY']) {
+            apiKey = options._secrets['MESHY_API_KEY'];
+        }
+
+        if (!apiKey) throw new Error("MESHY_API_KEY not configured (Env or DB Secret)");
 
         // Parse <GEOMETRY_REF:role> tag
         let finalPrompt = prompt;
@@ -86,7 +91,7 @@ export class MeshyProvider implements ProviderAdapter {
         const startResp = await fetch(url, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${this.apiKey}`,
+                'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(payload)
@@ -112,7 +117,7 @@ export class MeshyProvider implements ProviderAdapter {
                 : `https://api.meshy.ai/v2/text-to-3d/${taskId}`;
 
             const pollResp = await fetch(pollUrl, {
-                headers: { 'Authorization': `Bearer ${this.apiKey}` }
+                headers: { 'Authorization': `Bearer ${apiKey}` }
             });
             taskData = await pollResp.json();
 
@@ -132,7 +137,7 @@ export class MeshyProvider implements ProviderAdapter {
         const modelId = stage.model_id || 'meshy-4';
         console.log(`[Meshy] Calling ${modelId} for stage ${stage.stage_key}...`);
 
-        const taskData = await this.generate3D(prompt);
+        const taskData = await this.generate3D(prompt, { ..._context });
 
         // Download GLB
         const glbUrl = taskData.model_urls.glb;

@@ -23,7 +23,21 @@ export class FalProvider implements ProviderAdapter {
     }
 
     async generateImage(prompt: string, model: string = 'fal-ai/flux-pro', options: any = {}): Promise<any> {
-        if (!process.env.FAL_KEY) throw new Error("FAL_KEY not configured");
+        let apiKey = process.env.FAL_KEY;
+
+        if (options && options._secrets && options._secrets['FAL_API_KEY']) {
+            apiKey = options._secrets['FAL_API_KEY'];
+        }
+
+        if (!apiKey) throw new Error("FAL_KEY not configured (Env or DB Secret)");
+
+        // Configure FAL for this request essentially. 
+        // fal-serverless-client is a singleton-ish lib usually.
+        // We might need to check if we can pass credentials per request or if we must re-config.
+        // The fal-ai/serverless-client docs (implied) suggests `fal.config({ credentials })`.
+        // This might be global state. If we have concurrent runs with different keys (unlikely in this single-tenant agent), it might be an issue.
+        // But for now, setting it here is fine.
+        fal.config({ credentials: apiKey });
 
         return await fal.subscribe(model, {
             input: {
@@ -46,7 +60,7 @@ export class FalProvider implements ProviderAdapter {
         const model = stage.model_id || 'fal-ai/flux-pro';
         console.log(`[Fal] Calling ${model} for stage ${stage.stage_key}...`);
 
-        const result = await this.generateImage(prompt, model);
+        const result = await this.generateImage(prompt, model, { ..._context });
 
         const artifacts: any[] = [];
 
