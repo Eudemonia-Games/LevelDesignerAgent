@@ -21,7 +21,7 @@ registerProvider('nanobanana', new NanoBananaProvider());
 // Register others later or import a bootstrap file
 
 import { buildRunContext } from './context';
-import { resolvePrompt } from './resolver';
+import { resolvePrompt, resolveBindings } from './resolver';
 import { createAsset, createAssetFile } from '../db/assets';
 
 export async function executeRun(run: Run) {
@@ -163,12 +163,26 @@ export async function executeRun(run: Run) {
     // Build Context
     const context = buildRunContext(run, stageRuns);
     // Inject secrets into context (hidden property convention)
+    // Inject secrets into context (hidden property convention)
     (context as any)._secrets = secretsMap;
+
+    // Resolve Bindings
+    // This allows remapping "$.context.Stage.output" -> "enhanced_prompt"
+    let boundContext = { ...context };
+    if (nextStage.input_bindings_json) {
+        try {
+            const bindings = resolveBindings(nextStage.input_bindings_json, context);
+            // Merge bindings at root level for template access: {{variable}}
+            boundContext = { ...boundContext, ...bindings };
+        } catch (e: any) {
+            console.warn(`[Worker] Failed to resolve bindings for ${nextStage.stage_key}:`, e);
+        }
+    }
 
     // Resolve Prompt
     let resolvedPrompt = "";
     try {
-        resolvedPrompt = resolvePrompt(nextStage.prompt_template, context);
+        resolvedPrompt = resolvePrompt(nextStage.prompt_template, boundContext);
     } catch (e: any) {
         await updateRunStatus(run.id, 'failed', { error_summary: `Prompt resolution failed for ${nextStage.stage_key}: ${e.message}` });
         await emitRunEvent(run.id, 'error', `Prompt resolution failed: ${e.message}`, { stage_key: nextStage.stage_key });
@@ -199,8 +213,18 @@ export async function executeRun(run: Run) {
             const provider = getProvider(providerName);
             output = await provider.run(run, nextStage, attempt, context, resolvedPrompt);
         } catch (e: any) {
-            if (e.message.includes('not configured') || e.message.includes('not found')) {
-                // Fallback to stub if provider missing/unconfigured?
+            const msg = e.message.toLowerCase();
+            const shouldFallback =
+                msg.includes('not configured') ||
+                msg.includes('not found') ||
+                msg.includes('404') ||
+                msg.includes('400') ||
+                msg.includes('500') ||
+                msg.includes('generatecontent') || // Specific to Gemini misuse 
+                msg.includes('fetch failed');
+
+            if (shouldFallback) {
+                // Fallback to stub if provider missing/unconfigured or API error
                 await emitRunEvent(run.id, 'warn', `Provider ${nextStage.provider} failed: ${e.message}. Falling back to STUB.`);
                 const { generateStubOutput } = await import('./stubs');
                 output = generateStubOutput(run, nextStage, attempt);
@@ -208,6 +232,7 @@ export async function executeRun(run: Run) {
                 throw e;
             }
         }
+
 
         // 7. Persist Success
 
