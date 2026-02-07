@@ -1,86 +1,122 @@
-
 import { ProviderAdapter, ProviderOutput } from './index';
 import { FlowStageTemplate, Run } from '../db/types';
 
+type GeminiInlineImage = {
+    inlineData: { mimeType?: string; data: string };
+};
+
+function sleep(ms: number) {
+    return new Promise(res => setTimeout(res, ms));
+}
+
+function normalizeModelId(modelId: string | undefined): string {
+    const id = (modelId || '').trim();
+    if (!id) return 'gemini-2.5-flash-image';
+
+    // Known-bad / deprecated ids we've seen in the wild
+    if (id === 'gemini-2.0-flash-exp') return 'gemini-2.5-flash-image';
+    if (id === 'gemini-2.0-flash') return 'gemini-2.5-flash-image';
+
+    return id;
+}
+
+async function callGenerateContent(apiKey: string, modelId: string, prompt: string) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+    const body = {
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+            // Ask explicitly for image output when supported
+            responseModalities: ['Image'],
+            // Some models ignore this; harmless if unsupported
+            imageConfig: { aspectRatio: '16:9' }
+        }
+    };
+
+    const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+
+    const text = await resp.text();
+    if (!resp.ok) {
+        // Bubble up raw details for debugging
+        throw new Error(`Gemini generateContent failed (${resp.status} ${resp.statusText}) for model ${modelId}: ${text}`);
+    }
+
+    return JSON.parse(text);
+}
+
 export class NanoBananaProvider implements ProviderAdapter {
     async run(_run: Run, stage: FlowStageTemplate, _attempt: number, context: any, prompt: string): Promise<ProviderOutput> {
-        const apiKey = context._secrets['GEMINI_API_KEY'];
+        const apiKey = context._secrets?.['GEMINI_API_KEY'];
         if (!apiKey) {
-            throw new Error("GEMINI_API_KEY not found in secrets");
+            throw new Error('GEMINI_API_KEY not found in secrets');
         }
 
-        // Map models to latest valid ones
-        let modelId = stage.model_id || 'gemini-2.5-flash-image';
-        if (modelId === 'gemini-2.0-flash-exp') {
-            modelId = 'gemini-2.5-flash-image';
-        }
+        // Preferred + fallback model list
+        const requested = normalizeModelId(stage.model_id);
+        const candidates = Array.from(new Set([
+            requested,
+            'gemini-2.5-flash-image',
+            'gemini-3-pro-image-preview'
+        ]));
 
-        console.log(`[NanoBanana] Generating content with ${modelId}...`);
+        console.log(`[NanoBanana] Generating image. Requested=${stage.model_id || '(none)'} Using candidates=${candidates.join(', ')}`);
 
-        try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+        let lastErr: any = null;
+        for (const modelId of candidates) {
+            try {
+                const json = await callGenerateContent(apiKey, modelId, prompt);
 
-            const payload = {
-                contents: [{
-                    parts: [{ text: prompt }]
-                }],
-                generationConfig: {
-                    responseModalities: ["image"],
-                    imageConfig: {
-                        aspectRatio: "16:9"
-                    }
-                }
-            };
+                const cand = json?.candidates?.[0];
+                const parts: GeminiInlineImage[] = cand?.content?.parts || [];
+                const artifacts: any[] = [];
 
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errText = await response.text();
-                // If 404, might be model fallback?
-                if (response.status === 404 && modelId !== 'gemini-2.5-flash-image') {
-                    console.warn(`[NanoBanana] ${modelId} not found, falling back to gemini-2.5-flash-image`);
-                    // Simple retry with fallback:
-                    return this.run(_run, { ...stage, model_id: 'gemini-2.5-flash-image' }, _attempt, context, prompt);
-                }
-                throw new Error(`Gemini REST Error ${response.status}: ${errText}`);
-            }
-
-            const data: any = await response.json();
-
-            // Extract images
-            const artifacts: any[] = [];
-
-            // Response format: candidates[0].content.parts[].inlineData (or executableCode etc)
-            const candidates = data.candidates;
-            if (candidates && candidates.length > 0) {
-                const parts = candidates[0].content?.parts || [];
                 for (const part of parts) {
-                    if (part.inlineData && part.inlineData.mimeType.startsWith('image')) {
+                    if (part && (part as any).inlineData?.data) {
+                        const inline = (part as any).inlineData;
+                        const mimeType = inline.mimeType || 'image/png';
+                        const base64 = inline.data;
+
                         artifacts.push({
                             kind: 'image',
-                            slug: `image_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-                            data: Buffer.from(part.inlineData.data, 'base64')
+                            file_kind: 'png',
+                            mime_type: mimeType,
+                            file_ext: mimeType.includes('png') ? 'png' : 'bin',
+                            slug: `image_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+                            data: Buffer.from(base64, 'base64')
                         });
                     }
                 }
+
+                if (artifacts.length === 0) {
+                    const maybeText = cand?.content?.parts?.map((p: any) => p?.text).filter(Boolean).join('\n') || '';
+                    throw new Error(`No inline images returned from ${modelId}. Text=${maybeText.slice(0, 500)}`);
+                }
+
+                return {
+                    used_model: modelId,
+                    summary: `Image generated via Gemini (${modelId})`,
+                    _artifacts: artifacts
+                };
+
+            } catch (e: any) {
+                lastErr = e;
+                const msg = (e?.message || '').toLowerCase();
+                const retryable = msg.includes('404') || msg.includes('not supported') || msg.includes('not found') || msg.includes('permission');
+                console.warn(`[NanoBanana] Model ${modelId} failed: ${e?.message}`);
+                if (retryable) {
+                    // Try next model quickly
+                    await sleep(150);
+                    continue;
+                }
+                // Non-retryable -> stop
+                throw e;
             }
-
-            if (artifacts.length === 0) {
-                throw new Error(`No image parts found in response: ${JSON.stringify(data).substring(0, 200)}`);
-            }
-
-            return {
-                _artifacts: artifacts,
-                summary: `Image generated via ${modelId}`
-            };
-
-        } catch (e: any) {
-            console.error("[NanoBanana] Error:", e);
-            throw e;
         }
+
+        throw lastErr || new Error('NanoBananaProvider failed: no models succeeded');
     }
 }

@@ -11,7 +11,6 @@ import { OpenAIProvider } from '../providers/openai';
 import { FalProvider } from '../providers/fal';
 import { MeshyProvider } from '../providers/meshy';
 import { NanoBananaProvider } from '../providers/nanobanana';
-import { GeminiProvider } from '../providers/gemini';
 
 // Registry setup (should be in app startup, but lazy here works for worker)
 registerProvider('openai', new OpenAIProvider());
@@ -19,8 +18,6 @@ registerProvider('fal', new FalProvider());
 registerProvider('meshy', new MeshyProvider());
 registerProvider('rodin', new MeshyProvider()); // Alias for now or implement separate
 registerProvider('nanobanana', new NanoBananaProvider());
-// Register Gemini for Text/LLM (SDK based)
-registerProvider('gemini', new GeminiProvider());
 // Register others later or import a bootstrap file
 
 import { buildRunContext } from './context';
@@ -175,6 +172,8 @@ export async function executeRun(run: Run) {
     if (nextStage.input_bindings_json) {
         try {
             const bindings = resolveBindings(nextStage.input_bindings_json, context);
+            // Keep a copy for provider configs / diagnostics
+            (context as any)._vars = bindings;
             // Merge bindings at root level for template access: {{variable}}
             boundContext = { ...boundContext, ...bindings };
         } catch (e: any) {
@@ -192,7 +191,7 @@ export async function executeRun(run: Run) {
         return;
     }
 
-    const sr = await createStageRun(run.id, nextStage.stage_key, attempt, resolvedPrompt, context);
+    const sr = await createStageRun(run.id, nextStage.stage_key, attempt, resolvedPrompt, (context as any)._vars || {});
 
     // 5. Update Run State
     await updateRunStatus(run.id, 'running', { current_stage_key: nextStage.stage_key });
@@ -206,27 +205,15 @@ export async function executeRun(run: Run) {
     try {
         // 6. Execute (Real Provider)
         let output: any;
-        try {
-            let providerName = nextStage.provider;
-            // Dispatch 'gemini' image stages to 'nanobanana'
-            if (providerName === 'gemini' && nextStage.kind === 'image') {
-                providerName = 'nanobanana';
-            }
 
-            const provider = getProvider(providerName);
-
-            // Pass secrets and other meta options
-            const providerContext = {
-                ...context,
-                _secrets: secretsMap
-            };
-
-            output = await provider.run(run, nextStage, attempt, providerContext, resolvedPrompt);
-        } catch (e: any) {
-            // NO STUBS. Fail Hard.
-            throw e;
+        let providerName = nextStage.provider;
+        // Dispatch 'gemini' image stages to 'nanobanana'
+        if (providerName === 'gemini' && nextStage.kind === 'image') {
+            providerName = 'nanobanana';
         }
 
+        const provider = getProvider(providerName);
+        output = await provider.run(run, nextStage, attempt, context, resolvedPrompt);
 
         // 7. Persist Success
 
@@ -247,7 +234,7 @@ export async function executeRun(run: Run) {
 
                     // Upload File
                     // art.data is string or buffer.
-                    await createAssetFile(assetId, art.data, art.kind);
+                    await createAssetFile(assetId, art.data, art.file_kind || art.kind, { mimeType: art.mime_type, fileExt: art.file_ext });
 
                     producedArtifacts.push(assetId);
 
@@ -271,7 +258,7 @@ export async function executeRun(run: Run) {
         if (!newContext.context) newContext.context = {};
 
         newContext.context[nextStage.stage_key] = {
-            output: sanitizedOutput,
+            ...sanitizedOutput,
             artifacts: producedArtifacts
         };
         await updateRunContext(run.id, newContext);

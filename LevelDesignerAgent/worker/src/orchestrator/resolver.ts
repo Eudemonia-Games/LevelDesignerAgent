@@ -5,13 +5,13 @@ Handlebars.registerHelper('json', function (context) {
     return JSON.stringify(context, null, 2);
 });
 
-// Simple JSONPath resolver (supports dot notation and array indexing)
+// Simple JSONPath-ish resolver (supports dot notation and array indexing: foo[0].bar)
 export function resolveBindings(bindings: Record<string, string>, context: any): any {
     const result: any = {};
     for (const [key, path] of Object.entries(bindings)) {
-        if (path.startsWith('$')) {
-            // Remove '$' or '$.'
-            const cleanPath = path.replace(/^\$|\^\./, '').replace(/^\./, '');
+        if (typeof path === 'string' && path.startsWith('$')) {
+            // Strip leading '$' or '$.'
+            const cleanPath = path.replace(/^\$\.?/, '');
             if (!cleanPath) {
                 result[key] = context; // Root
                 continue;
@@ -19,27 +19,26 @@ export function resolveBindings(bindings: Record<string, string>, context: any):
 
             const parts = cleanPath.split('.').map(p => {
                 // Handle array index like artifacts[0]
-                if (p.includes('[')) {
-                    // This is a naive split, assumes simple property[index]
+                if (p.includes('[') && p.endsWith(']')) {
                     const [prop, indexStr] = p.split('[');
-                    const index = parseInt(indexStr.replace(']', ''));
+                    const index = parseInt(indexStr.replace(']', ''), 10);
                     return { prop, index };
                 }
-                return { prop: p };
+                return { prop: p as string };
             });
 
-            let current = context;
+            let current: any = context;
             for (const part of parts) {
                 if (current === undefined || current === null) break;
                 if (part.index !== undefined) {
-                    current = current[part.prop]?.[part.index];
+                    current = current?.[part.prop]?.[part.index];
                 } else {
-                    current = current[part.prop];
+                    current = current?.[part.prop];
                 }
             }
             result[key] = current;
         } else {
-            // Static value or unhandled
+            // Static value
             result[key] = path;
         }
     }
@@ -49,7 +48,6 @@ export function resolveBindings(bindings: Record<string, string>, context: any):
 export function resolvePrompt(template: string, context: any): string {
     if (!template) return '';
     try {
-        // "noEscape: true" is usually good for prompts to avoid HTML entity encoding
         const render = Handlebars.compile(template, { noEscape: true });
         return render(context);
     } catch (e: any) {
