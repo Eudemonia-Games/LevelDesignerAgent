@@ -10,7 +10,8 @@ export const buildServer = async () => {
     await server.register(cors, {
         credentials: true,
         origin: (origin, cb) => {
-            const allowedOrigin = process.env.CORS_ORIGIN;
+            const allowedOrigin = process.env.CORS_ORIGIN || process.env.CORS_ORIGINS;
+
             // Allow requests with no origin (like mobile apps or curl requests)
             if (!origin) return cb(null, true);
 
@@ -18,17 +19,17 @@ export const buildServer = async () => {
             // CAUTION: with credentials: true, wildcard * is NOT allowed by browsers.
             // We should enforce explicit origins.
             if (!allowedOrigin || allowedOrigin === '*') {
-                // If user didn't set origin but wants auth, this might fail in browser.
-                // Fallback to reflecting origin for dev convenience if safely possible,
-                // or just allow it and let browser decide.
                 return cb(null, true);
             }
 
-            const allowedOrigins = allowedOrigin.split(',').map(o => o.trim());
-            if (allowedOrigins.includes(origin)) {
+            const allowedOrigins = allowedOrigin.split(',').map(o => o.trim().replace(/\/$/, ""));
+            const cleanOrigin = origin.replace(/\/$/, "");
+
+            if (allowedOrigins.includes(cleanOrigin)) {
                 return cb(null, true);
             }
 
+            console.warn(`⚠️ [CORS] Blocked request from origin: '${origin}' (clean: '${cleanOrigin}'). Allowed: ${JSON.stringify(allowedOrigins)}`);
             cb(new Error("Not allowed by CORS"), false);
         }
     });
