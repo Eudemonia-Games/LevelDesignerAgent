@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import * as Shared from '@lda/shared';
 import { Login } from './Login';
+import { SecretsAdmin } from './SecretsAdmin';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -138,6 +139,7 @@ function App() {
                 <div style={{ marginTop: '20px', padding: '10px', border: '1px dashed #ccc' }}>
                     Core functionality coming in LDA.0.4.0
                 </div>
+                <SecretsAdmin />
             </div>
         </div>
     );

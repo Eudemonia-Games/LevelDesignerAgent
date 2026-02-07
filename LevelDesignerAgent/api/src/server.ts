@@ -3,6 +3,10 @@ import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
 import { APP_VERSION } from '@lda/shared';
 import { authRoutes, AuthService } from './auth';
+import { secretsRoutes } from './routes/secrets';
+
+
+// ... (rest of file)
 
 export const buildServer = async () => {
     const server = Fastify();
@@ -53,7 +57,10 @@ export const buildServer = async () => {
         }
     });
 
+
+
     server.register(authRoutes);
+    server.register(secretsRoutes);
 
     server.get('/health', async () => {
         let dbStatus = "unknown";

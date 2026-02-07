@@ -20,23 +20,19 @@ Introduced admin authentication for the API and Web interface. The system now re
 
 ## Verification Evidence
 ### Render Deployment
-User chose to verify directly on Render.
+**Verified Successfully on 2026-02-07**
 
-**Steps to Verify:**
-1.  **Configure Environment Variables** on Render for `lda-api`:
-    -   `ADMIN_USERNAME`: `admin` (or preferred)
-    -   `ADMIN_PASSWORD_HASH`: (Output from `pnpm --filter @lda/api gen:admin-hash "your-password"`)
-    -   `SESSION_COOKIE_SECRET`: (A long random string)
-    -   `CORS_ORIGIN`: `https://your-lda-web.onrender.com`
-    -   `DATABASE_URL`: (Your Neon DB connection string)
-2.  **Deploy** `lda-api` and `lda-web`.
-3.  **Visit Web URL**: Expect Login Screen.
-4.  **Login**: Use configured credentials.
-5.  **Verify**:
-    -   System Status should show API connected.
-    -   `lda_session` cookie should be present and `HttpOnly`.
-    -   Refreshing page should maintain session.
-    -   Logout should clear session.
+**Steps Verified:**
+1.  **Environment Configured**: `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `SESSION_COOKIE_SECRET`, `CORS_ORIGIN`, `DATABASE_URL`.
+2.  **Deployment**: `lda-api` and `lda-web` deployed successfully.
+3.  **Login Flow**:
+    -   Accessed Web URL -> Redirected to Login.
+    -   Logged in with `admin` / `admin`.
+    -   Redirected to Dashboard (System Status: OK).
+    -   `lda_session` cookie confirmed present and HttpOnly.
+4.  **Logout**: Successfully cleared session and returned to login.
+
+**CORS Note**: `server.ts` was patched to support trailing slash stripping and better logging during verification.
 
 ## Follow-ups
 -   Implement role-based access control (RBAC) if multiple user types are needed (current is single admin).
