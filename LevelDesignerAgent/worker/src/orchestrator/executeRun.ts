@@ -139,6 +139,8 @@ export async function executeRun(run: Run) {
 
     // Determine which secrets are needed based on provider
     const provider = nextStage.provider;
+    console.log(`[Worker] Fetching secrets for provider: ${provider}, kind: ${nextStage.kind}`);
+
     if (provider === 'openai') {
         const key = await SecretsService.getDecryptedSecret('OPENAI_API_KEY');
         if (key) secretsMap['OPENAI_API_KEY'] = key;
@@ -150,7 +152,12 @@ export async function executeRun(run: Run) {
         if (key) secretsMap['FAL_API_KEY'] = key;
     } else if (provider === 'meshy' || provider === 'rodin') {
         const key = await SecretsService.getDecryptedSecret('MESHY_API_KEY');
-        if (key) secretsMap['MESHY_API_KEY'] = key;
+        if (key) {
+            secretsMap['MESHY_API_KEY'] = key;
+            console.log("[Worker] Loaded MESHY_API_KEY from secrets");
+        } else {
+            console.warn("[Worker] MESHY_API_KEY not found in secrets");
+        }
     }
 
     // Build Context
@@ -239,8 +246,13 @@ export async function executeRun(run: Run) {
         // Safe update of JSON context
         const newContext = { ...run.context_json };
         if (!newContext.context) newContext.context = {};
+
+        // Sanitize output to prevent OOM (remove large binary artifacts)
+        const sanitizedOutput = { ...output };
+        delete sanitizedOutput._artifacts;
+
         newContext.context[nextStage.stage_key] = {
-            output,
+            output: sanitizedOutput,
             artifacts: producedArtifacts
         };
         await updateRunContext(run.id, newContext);

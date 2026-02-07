@@ -9,8 +9,9 @@ const DEFAULT_STAGES: (UpsertStageParams & { stage_key: string })[] = [
         stage_key: 'S1_PROMPT_ENHANCE',
         order_index: 10,
         kind: 'llm',
-        provider: 'gemini',
-        model_id: 'gemini-3-pro-preview', // Using flash for speed/cost in v0, design doc says pro but configurable
+        // ...
+        model_id: 'gemini-3-flash-preview', // User requested flash
+        // ... (truncated for brevity in prompt, will use exact match in tool)
         prompt_template: `You are the "Level Design Agent" prompt enhancer.
 
 We are generating ONE boss room interior (grid-based) and ONE exterior building shell, plus a static boss mesh.
@@ -75,7 +76,7 @@ Return JSON ONLY in this exact shape:
         order_index: 20,
         kind: 'llm',
         provider: 'gemini',
-        model_id: 'gemini-3-pro-preview',
+        model_id: 'gemini-3-flash-preview',
         prompt_template: `You are the "Level Design Agent" layout planner.
 
 Enhanced prompt:
@@ -191,7 +192,7 @@ Return JSON ONLY:
         order_index: 40,
         kind: 'llm',
         provider: 'gemini',
-        model_id: 'gemini-3-pro-preview',
+        model_id: 'gemini-3-flash-preview',
         prompt_template: `You are the "Level Design Agent" placement planner.
 
 You will receive a grid image showing the room layout with labeled coordinates.
@@ -238,7 +239,7 @@ Return JSON ONLY matching the expected schema (pillar_instances, wall_separator_
         order_index: 50,
         kind: 'image',
         provider: 'gemini',
-        model_id: 'gemini-3-pro-image-preview', // Using Gemini (Imagen 3)
+        model_id: 'gemini-2.0-flash-exp', // User requested 2.5 flash (2.0 flash) // Using Gemini (Imagen 3)
         prompt_template: '{{exterior_image_prompt}}',
         input_bindings_json: {
             "exterior_image_prompt": "$.context.S2_ANCHOR_PROMPTS.exterior_image_prompt"
@@ -251,7 +252,7 @@ Return JSON ONLY matching the expected schema (pillar_instances, wall_separator_
         order_index: 60,
         kind: 'image',
         provider: 'gemini',
-        model_id: 'gemini-3-pro-image-preview',
+        model_id: 'gemini-2.0-flash-exp', // User requested 2.5 flash (2.0 flash)
         prompt_template: '{{interior_style_image_prompt}}',
         input_bindings_json: {
             "interior_style_image_prompt": "$.context.S2_ANCHOR_PROMPTS.interior_style_image_prompt"
@@ -264,7 +265,7 @@ Return JSON ONLY matching the expected schema (pillar_instances, wall_separator_
         order_index: 70,
         kind: 'image',
         provider: 'gemini', // Design doc says image batch, usually Gemini or Fal
-        model_id: 'gemini-3-pro-image-preview', // High fidelity
+        model_id: 'gemini-2.0-flash-exp', // User requested 2.5 flash (2.0 flash) // High fidelity
         prompt_template: `Create a clean, well-lit reference image of a dungeon tile.
 
 Tile role: {{tile_role}}
@@ -293,7 +294,7 @@ Requirements:
         order_index: 80,
         kind: 'image',
         provider: 'gemini',
-        model_id: 'gemini-3-pro-image-preview',
+        model_id: 'gemini-2.0-flash-exp', // User requested 2.5 flash (2.0 flash)
         prompt_template: `Create a reference image for a single dungeon prop.
 
 Prop name: {{prop_name}}
@@ -322,7 +323,7 @@ Requirements:
         order_index: 90,
         kind: 'image',
         provider: 'gemini',
-        model_id: 'gemini-3-pro-image-preview',
+        model_id: 'gemini-2.0-flash-exp', // User requested 2.5 flash (2.0 flash)
         prompt_template: `Create a concept image of a single boss creature/statue/guardian for a dungeon boss room.
 
 Boss name: {{boss_name}}
