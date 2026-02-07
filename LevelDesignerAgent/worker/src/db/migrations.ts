@@ -9,13 +9,20 @@ export async function runMigrations() {
         return;
     }
 
+    // Sanitizer: Remove channel_binding if present (Node pg doesn't support it well)
+    let connectionString = dbUrl;
+    if (dbUrl.includes("channel_binding")) {
+        console.warn("⚠️ [DB] URL contained unsupported param: channel_binding (ignored)");
+        connectionString = dbUrl.replace(/([?&])channel_binding=[^&]+(&|$)/, '$1').replace(/&$/, '');
+    }
+
     // Handle sanitization for logging
-    const sanitizedUrl = dbUrl.replace(/:[^:@]+@/, ":***@");
+    const sanitizedUrl = connectionString.replace(/:[^:@]+@/, ":***@");
     console.log(`Running migrations against ${sanitizedUrl}...`);
 
     const client = new Client({
-        connectionString: dbUrl,
-        ssl: dbUrl.includes("localhost")
+        connectionString,
+        ssl: connectionString.includes("localhost")
             ? false
             : { rejectUnauthorized: false }, // Neon usually requires SSL
     });

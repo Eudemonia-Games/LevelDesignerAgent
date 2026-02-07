@@ -145,3 +145,37 @@ None.
 1. Redeploy `lda-web`.
 2. Verify UI loads and System Status shows API OK.
 
+
+### LDA.1.2.0 - Admin Auth
+
+#### Plan
+Implement admin authentication gate for API and Web apps. Use server-side sessions stored in Neon Postgres (`auth_sessions`) with signed httpOnly cookies. Gate all API routes except `/health` and `/auth/login`. Gate Web UI with a login screen.
+
+#### Files changed
+- [MODIFY] shared/src/version.ts (LDA.1.2.0)
+- [MODIFY] api/package.json, .env.example
+- [NEW] api/src/auth.ts, api/scripts/gen-admin-hash.js
+- [MODIFY] api/src/server.ts, api/src/db/migrations.ts, worker/src/db/migrations.ts
+- [NEW] web/src/Login.tsx
+- [MODIFY] web/src/App.tsx
+- [NEW] notes/lda/LDA.1.2.0.md
+
+#### Mismatches
+None.
+
+#### Limitations
+- Authentication is single-user (Admin).
+- `pnpm install` usually required after pulling changes due to new `bcryptjs` and cookie dependencies.
+
+#### How to verify in Repo Mode
+1. `pnpm install`
+2. `pnpm -r build`
+3. Generate hash: `pnpm --filter @lda/api gen:admin-hash "password"`
+4. Set `.env` with `ADMIN_PASSWORD_HASH` and `SESSION_COOKIE_SECRET`.
+5. Run API/Web. Verify `/health` is public but other routes return 401. Login via Web UI.
+
+#### How to verify in Render Mode
+1. Update Environment Variables for `lda-api`: `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `SESSION_COOKIE_SECRET`, `CORS_ORIGIN`.
+2. Deploy API.
+3. Deploy Web.
+4. Verify login flow.

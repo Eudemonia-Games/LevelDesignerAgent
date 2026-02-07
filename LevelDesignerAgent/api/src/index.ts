@@ -1,3 +1,11 @@
+import path from 'path';
+import dotenv from 'dotenv';
+
+// Load .env from root (monorepo context)
+dotenv.config({ path: path.join(process.cwd(), '../.env') });
+// Also try local .env just in case
+dotenv.config();
+
 import { buildServer } from './server';
 import { runMigrations } from './db/migrations';
 
