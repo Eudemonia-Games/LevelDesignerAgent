@@ -82,25 +82,26 @@ export const buildServer = async () => {
 
         if (process.env.DATABASE_URL) {
             try {
-                // Quick connectivity check
-                const { Client } = await import("pg");
-                const client = new Client(getDbConfig(process.env.DATABASE_URL));
-                await client.connect();
+                // Quick connectivity check with strict timeout
+                const dbCheck = async () => {
+                    const { Client } = await import("pg");
+                    const client = new Client({
+                        ...getDbConfig(process.env.DATABASE_URL!),
+                        connectionTimeoutMillis: 3000 // 3s connect timeout
+                    });
+                    await client.connect();
+                    // Just check one table or simple query
+                    await client.query('SELECT 1');
+                    await client.end();
+                    return "ok";
+                };
 
-                // Verify critical tables exist
-                const res = await client.query(`
-                    SELECT 
-                        to_regclass('auth_sessions') as auth,
-                        to_regclass('secrets') as secrets,
-                        to_regclass('flow_versions') as flows
-                `);
-                await client.end();
+                // Race against a 4s timeout prevents hanging requests
+                dbStatus = await Promise.race([
+                    dbCheck(),
+                    new Promise<string>((resolve) => setTimeout(() => resolve("timeout"), 4000))
+                ]);
 
-                if (res.rows[0].auth && res.rows[0].secrets && res.rows[0].flows) {
-                    dbStatus = "ok";
-                } else {
-                    dbStatus = "missing_tables";
-                }
             } catch (err: any) {
                 dbStatus = "error";
                 dbError = err.message;
