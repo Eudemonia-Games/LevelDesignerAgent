@@ -46,7 +46,8 @@ export const buildServer = async () => {
 
 
     server.addHook('onRequest', async (req, reply) => {
-        // Public Routes
+        // Public Routes & Preflight
+        if (req.method === 'OPTIONS') return;
         if (req.url.startsWith('/health')) return;
         if (req.url === '/auth/login') return;
 
