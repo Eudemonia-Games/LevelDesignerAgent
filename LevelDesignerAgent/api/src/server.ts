@@ -121,5 +121,9 @@ export const buildServer = async () => {
         };
     });
 
+    server.get('/', async () => {
+        return { service: "api", status: "ok", version: APP_VERSION };
+    });
+
     return server;
 };
