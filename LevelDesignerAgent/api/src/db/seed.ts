@@ -261,7 +261,7 @@ Return JSON ONLY matching the expected schema (pillar_instances, wall_separator_
         order_index: 70,
         kind: 'image',
         provider: 'gemini', // Design doc says image batch, usually Gemini or Fal
-        model_id: 'imagen-3.0-generate-001', // Placeholder for "gemini-2.5-flash-image"
+        model_id: 'imagen-3.0-generate-001', // Generating images via Gemini
         prompt_template: `Create a clean, well-lit reference image of a dungeon tile.
 
 Tile role: {{tile_role}}

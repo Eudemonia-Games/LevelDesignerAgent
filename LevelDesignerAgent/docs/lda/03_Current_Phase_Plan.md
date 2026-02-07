@@ -33,7 +33,7 @@ Transition from infrastructure setup to core agent capabilities. This phase focu
 ## Key Technical Decisions
 - **Framework**: LangGraph for stateful, multi-turn agent orchestration.
 - **State Persistence**: Use Postgres (`agent_state` table) to persist conversation history.
-- **Model**: start with `gpt-4o` or `gemini-1.5-pro`.
+- **Model**: start with `gpt-4o` or `gemini-3-pro-preview`.
 
 ## Definition of Done (Phase 2)
 - [ ] Agent can hold a conversation about level design.
