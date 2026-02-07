@@ -7,8 +7,9 @@ import { SecretsAdmin } from '../SecretsAdmin';
 export * from './DesignPage';
 export * from './RunPage';
 
-export function LibraryPage() {
+export function LibraryPage({ isAdmin = false }: { isAdmin?: boolean }) {
     const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+    const [startIn3D, setStartIn3D] = useState(false);
 
     // If detail view is open
     if (selectedRunId) {
@@ -16,7 +17,10 @@ export function LibraryPage() {
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ padding: '10px', borderBottom: '1px solid #333' }}>
                     <button
-                        onClick={() => setSelectedRunId(null)}
+                        onClick={() => {
+                            setSelectedRunId(null);
+                            setStartIn3D(false);
+                        }}
                         style={{
                             background: 'none',
                             border: '1px solid #444',
@@ -32,7 +36,11 @@ export function LibraryPage() {
                 <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
                     <RunDetail
                         runId={selectedRunId}
-                        onClose={() => setSelectedRunId(null)} // Added to satisfy props if needed, though view change handles it
+                        onClose={() => {
+                            setSelectedRunId(null);
+                            setStartIn3D(false);
+                        }}
+                        initial3D={startIn3D}
                     />
                 </div>
             </div>
@@ -41,8 +49,14 @@ export function LibraryPage() {
 
     return (
         <div style={{ height: '100%', overflowY: 'auto', padding: '20px' }}>
-            <h2 style={{ marginBottom: '20px' }}>Community Runs</h2>
-            <RunGallery onRunClick={setSelectedRunId} />
+            <h2 style={{ marginBottom: '20px' }}>Community Levels</h2>
+            <RunGallery
+                isAdmin={isAdmin}
+                onRunClick={(runId, mode) => {
+                    setSelectedRunId(runId);
+                    setStartIn3D(mode === '3d');
+                }}
+            />
         </div>
     );
 }

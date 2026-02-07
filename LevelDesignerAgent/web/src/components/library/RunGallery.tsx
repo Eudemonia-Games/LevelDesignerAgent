@@ -12,10 +12,11 @@ interface RunSummary {
 }
 
 interface RunGalleryProps {
-    onRunClick?: (runId: string) => void;
+    onRunClick?: (runId: string, mode: 'details' | '3d') => void;
+    isAdmin?: boolean;
 }
 
-export function RunGallery({ onRunClick }: RunGalleryProps) {
+export function RunGallery({ onRunClick, isAdmin = false }: RunGalleryProps) {
     const [runs, setRuns] = useState<RunSummary[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -51,13 +52,13 @@ export function RunGallery({ onRunClick }: RunGalleryProps) {
             {runs.map(run => (
                 <div
                     key={run.id}
-                    onClick={() => onRunClick && onRunClick(run.id)}
+                    onClick={() => isAdmin && onRunClick && onRunClick(run.id, 'details')}
                     style={{
                         background: '#1a1a1a',
                         border: '1px solid #333',
                         borderRadius: '8px',
                         padding: '16px',
-                        cursor: 'pointer',
+                        cursor: 'default',
                         transition: 'transform 0.2s, border-color 0.2s',
                         display: 'flex',
                         flexDirection: 'column',
@@ -104,55 +105,69 @@ export function RunGallery({ onRunClick }: RunGalleryProps) {
                     </div>
 
                     <div style={{ marginTop: 'auto', paddingTop: '10px', display: 'flex', gap: '8px' }}>
+                        {/* Admin Only: Details Button */}
+                        {isAdmin && (
+                            <button style={{
+                                flex: 1,
+                                background: '#333',
+                                border: 'none',
+                                color: '#aaa',
+                                padding: '8px',
+                                cursor: 'pointer',
+                                borderRadius: '4px'
+                            }} onClick={(e) => {
+                                e.stopPropagation();
+                                onRunClick && onRunClick(run.id, 'details');
+                            }}>
+                                Details
+                            </button>
+                        )}
+
+                        {/* Public & Admin: Load 3D Button */}
                         <button style={{
                             flex: 1,
-                            background: '#333',
+                            background: '#0ea5e9', // Sky blue
                             border: 'none',
-                            color: '#aaa',
+                            color: 'white',
                             padding: '8px',
                             cursor: 'pointer',
-                            borderRadius: '4px'
+                            borderRadius: '4px',
+                            fontWeight: 'bold',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '5px'
                         }} onClick={(e) => {
                             e.stopPropagation();
-                            onRunClick && onRunClick(run.id);
+                            onRunClick && onRunClick(run.id, '3d');
                         }}>
-                            View
+                            <span>Choose Level</span>
                         </button>
-                        <button style={{
-                            width: '40px',
-                            background: '#333',
-                            border: 'none',
-                            color: '#aaa',
-                            padding: '8px',
-                            cursor: 'pointer',
-                            borderRadius: '4px'
-                        }} title="Download Assets" onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/runs/${run.id}/download`, '_blank');
-                        }}>
-                            ⬇️
-                        </button>
-                        <button style={{
-                            width: '40px',
-                            background: '#422',
-                            border: 'none',
-                            color: '#d88',
-                            padding: '8px',
-                            cursor: 'pointer',
-                            borderRadius: '4px'
-                        }} title="Delete Run" onClick={async (e) => {
-                            e.stopPropagation();
-                            if (!confirm("Are you sure you want to delete this run? This action cannot be undone.")) return;
-                            try {
-                                await fetchApi(`/api/v1/runs/${run.id}`, { method: 'DELETE' });
-                                // Optimistic update or reload
-                                setRuns(runs.filter(r => r.id !== run.id));
-                            } catch (err: any) {
-                                alert(`Failed to delete: ${err.message}`);
-                            }
-                        }}>
-                            🗑️
-                        </button>
+
+                        {/* Admin Only: Delete Button */}
+                        {isAdmin && (
+                            <button style={{
+                                width: '40px',
+                                background: '#422',
+                                border: 'none',
+                                color: '#d88',
+                                padding: '8px',
+                                cursor: 'pointer',
+                                borderRadius: '4px'
+                            }} title="Delete Run" onClick={async (e) => {
+                                e.stopPropagation();
+                                if (!confirm("Are you sure you want to delete this run? This action cannot be undone.")) return;
+                                try {
+                                    await fetchApi(`/api/v1/runs/${run.id}`, { method: 'DELETE' });
+                                    // Optimistic update
+                                    setRuns(runs.filter(r => r.id !== run.id));
+                                } catch (err: any) {
+                                    alert(`Failed to delete: ${err.message}`);
+                                }
+                            }}>
+                                🗑️
+                            </button>
+                        )}
                     </div>
                 </div>
             ))}

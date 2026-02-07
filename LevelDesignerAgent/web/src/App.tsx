@@ -57,7 +57,7 @@ function App() {
             <Routes>
                 <Route path="/" element={<AppShell onLogout={isAuthenticated ? handleLogout : () => window.location.reload()} isAuthenticated={isAuthenticated} />}>
                     {/* Public Routes */}
-                    <Route path="library" element={<LibraryPage />} />
+                    <Route path="library" element={<LibraryPage isAdmin={!!isAuthenticated} />} />
 
                     {/* Protected Routes */}
                     {isAuthenticated ? (
