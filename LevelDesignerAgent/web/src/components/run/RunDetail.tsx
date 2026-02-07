@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { fetchApi } from '../../api';
 import { Run, StageRun, RunEvent } from '@lda/shared';
-import { LevelViewer } from './LevelViewer';
+// import { LevelViewer } from './LevelViewer'; // Removed static import
 import { ErrorBoundary } from '../ErrorBoundary';
+
+// Lazy load the 3D viewer to prevent 3D-library initialization errors from crashing the whole app at startup
+const LevelViewer = React.lazy(() => import('./LevelViewer').then(module => ({ default: module.LevelViewer })));
 
 interface RunDetailProps {
     runId: string;
     onClose: () => void;
 }
+
 
 
 const safeTime = (value: unknown) => {
