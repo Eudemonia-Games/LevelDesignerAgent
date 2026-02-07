@@ -10,6 +10,8 @@ import { buildServer } from './server';
 import { runMigrations } from './db/migrations';
 
 const start = async () => {
+    console.log(`[API] Starting service... Version: ${process.env.npm_package_version || 'unknown'}`);
+
     // Run DB migrations
     await runMigrations();
 
