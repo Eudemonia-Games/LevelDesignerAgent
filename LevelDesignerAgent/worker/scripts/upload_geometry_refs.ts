@@ -35,12 +35,17 @@ async function uploadRefs() {
         fs.mkdirSync(refsDir, { recursive: true });
 
         // Create dummy PNG content (1x1 pixel)
-        // Base64 for 1x1 red pixel
         const pixel = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
-        fs.writeFileSync(path.join(refsDir, 'ref_cube.png'), pixel);
-        fs.writeFileSync(path.join(refsDir, 'ref_sphere.png'), pixel);
-        console.log("Created dummy ref images.");
+        const roles = ['cube', 'sphere', 'floor', 'wall', 'pillar', 'doorway', 'roof', 'window', 'wall_separator', 'wall_niche'];
+
+        for (const role of roles) {
+            const filename = `ref_${role}.png`;
+            if (!fs.existsSync(path.join(refsDir, filename))) {
+                fs.writeFileSync(path.join(refsDir, filename), pixel);
+            }
+        }
+        console.log("Created dummy ref images for all roles.");
     }
 
     const files = fs.readdirSync(refsDir);

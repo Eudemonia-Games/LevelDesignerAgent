@@ -1,8 +1,10 @@
 import { ProviderAdapter, ProviderOutput } from './index';
 import { FlowStageTemplate, Run } from '../db/types';
+import { getSignedDownloadUrl } from '../storage/r2';
 
 export class MeshyProvider implements ProviderAdapter {
     private apiKey: string | undefined;
+    // ...
 
     private static instance: MeshyProvider | null = null;
 
@@ -23,19 +25,57 @@ export class MeshyProvider implements ProviderAdapter {
     async generate3D(prompt: string, options: any = {}): Promise<any> {
         if (!this.apiKey) throw new Error("MESHY_API_KEY not configured");
 
-        const startResp = await fetch('https://api.meshy.ai/v2/text-to-3d', {
+        // Parse <GEOMETRY_REF:role> tag
+        let finalPrompt = prompt;
+        const refMatch = prompt.match(/<GEOMETRY_REF:([\w_]+)>/);
+        if (refMatch) {
+            const role = refMatch[1];
+            try {
+                const key = `assets/refs/ref_${role}.png`;
+                console.log(`[Meshy] Found Geometry Ref tag: ${role}. Fetching URL for ${key}...`);
+                // Get signed URL (valid for 1 hour)
+                const signedUrl = await getSignedDownloadUrl(key, 3600);
+                options.image_url = signedUrl;
+                finalPrompt = prompt.replace(refMatch[0], '').trim();
+            } catch (err: any) {
+                console.warn(`[Meshy] Failed to resolve geometry ref for ${role}: ${err.message}`);
+                // Proceed without image, or fail? Proceed for now.
+            }
+        }
+
+        let url = 'https://api.meshy.ai/v2/text-to-3d';
+        let payload: any = {
+            mode: 'preview',
+            prompt: finalPrompt,
+            art_style: 'realistic',
+            should_remesh: true,
+            ...options
+        };
+
+        // Switch to Image-to-3D if image_url provided
+        // Note: Meshy API usually separates these. v1/image-to-3d is common, but checking v2 docs (assumed):
+        // If image_url is present, we use the image-to-3d endpoint.
+        if (options.image_url) {
+            console.log(`[Meshy] Using Image-to-3D with url: ${options.image_url}`);
+            url = 'https://api.meshy.ai/v1/image-to-3d';
+            payload = {
+                image_url: options.image_url,
+                enable_pbr: true,
+                ...options
+            };
+            // Remove text-to-3d specific fields if they are in options
+            delete payload.prompt;
+            delete payload.mode;
+            delete payload.art_style;
+        }
+
+        const startResp = await fetch(url, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${this.apiKey}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                mode: 'preview',
-                prompt: prompt,
-                art_style: 'realistic',
-                should_remesh: true,
-                ...options
-            })
+            body: JSON.stringify(payload)
         });
 
         if (!startResp.ok) {
@@ -52,7 +92,14 @@ export class MeshyProvider implements ProviderAdapter {
 
         while (retries < maxRetries) {
             await new Promise(r => setTimeout(r, 2000));
-            const pollResp = await fetch(`https://api.meshy.ai/v2/text-to-3d/${taskId}`, {
+            // Polling endpoint is different for image-to-3d in v1 typically? 
+            // Usually Meshy uses generic task ID lookup or specific endpoint.
+            // As per common pattern, it's often the same or /v1/image-to-3d/{id}.
+            const pollUrl = options.image_url
+                ? `https://api.meshy.ai/v1/image-to-3d/${taskId}`
+                : `https://api.meshy.ai/v2/text-to-3d/${taskId}`;
+
+            const pollResp = await fetch(pollUrl, {
                 headers: { 'Authorization': `Bearer ${this.apiKey}` }
             });
             taskData = await pollResp.json();

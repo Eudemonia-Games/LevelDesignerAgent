@@ -358,7 +358,7 @@ Requirements:
         kind: 'model3d',
         provider: 'meshy',
         model_id: 'meshy-4',
-        prompt_template: '{{tile_visual_prompt}}',
+        prompt_template: '{{tile_visual_prompt}} <GEOMETRY_REF:{{tile_geometry_role}}>',
         provider_config_json: {
             "quality_mode": "low_poly",
             "target_triangles": 7000,
