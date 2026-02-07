@@ -241,6 +241,7 @@ export async function executeRun(run: Run) {
 
                     producedArtifacts.push(assetId);
 
+                    console.log(`[Worker] Artifact created: ${art.slug} (Asset ID: ${assetId})`);
                     await emitRunEvent(run.id, 'info', `Artifact created: ${art.slug}`, { asset_id: assetId });
                 } catch (err: any) {
                     await emitRunEvent(run.id, 'error', `Failed to upload artifact ${art.slug}`, { error: err.message });
