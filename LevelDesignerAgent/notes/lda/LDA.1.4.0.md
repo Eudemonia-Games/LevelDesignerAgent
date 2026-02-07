@@ -18,3 +18,8 @@ Improved the Admin Secrets UI with better UX (copy buttons, status indicators, r
 
 ## Follow-ups
 -   None immediatly. Ready for production use.
+
+## Release Fixes (Post-Verification)
+- **Render CORS/Auth Fixes**:
+  - Updated cookie policy to SameSite: 'none' and secure: true in pi/src/auth.ts to allow cross-site cookies between Web and API subdomains.
+  - Updated pi/src/server.ts global guard to allow OPTIONS requests (CORS preflight) without authentication.
