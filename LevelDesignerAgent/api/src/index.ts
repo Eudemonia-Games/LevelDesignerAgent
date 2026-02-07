@@ -12,18 +12,24 @@ import { runMigrations } from './db/migrations';
 const start = async () => {
     console.log(`[API] Starting service... Version: ${process.env.npm_package_version || 'unknown'}`);
 
-    // Run DB migrations
-    await runMigrations();
-
-    const server = await buildServer();
-    const port = process.env.PORT ? parseInt(process.env.PORT) : 3001;
-
     try {
+        const server = await buildServer();
+        const port = process.env.PORT ? parseInt(process.env.PORT) : 3001;
+
+        // Bind port FIRST to satisfy cloud health checks immediately
         await server.listen({ port, host: '0.0.0.0' });
         console.log(`API server listening on port ${port}`);
+
+        // Run migrations in background (non-blocking to startup, but vital for app)
+        console.log("[API] Starting DB migrations...");
+        runMigrations().then(() => {
+            console.log("[API] Migrations completed.");
+        }).catch(err => {
+            console.error("❌ [API] Critical: Migrations failed:", err);
+        });
+
     } catch (err) {
         console.error("❌ Failed to start server:", err);
-        server.log.error(err);
         process.exit(1);
     }
 };
