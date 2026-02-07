@@ -1,5 +1,10 @@
 import * as Handlebars from 'handlebars';
 
+// Register helpers globally
+Handlebars.registerHelper('json', function (context) {
+    return JSON.stringify(context, null, 2);
+});
+
 export function resolvePrompt(template: string, context: any): string {
     if (!template) return '';
     try {
