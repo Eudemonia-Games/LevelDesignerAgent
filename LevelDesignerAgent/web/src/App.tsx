@@ -139,7 +139,7 @@ function App() {
                 <div style={{ marginTop: '20px', padding: '10px', border: '1px dashed #ccc' }}>
                     Core functionality coming in LDA.0.4.0
                 </div>
-                <SecretsAdmin />
+                <SecretsAdmin onSessionExpired={() => setIsAuthenticated(false)} />
             </div>
         </div>
     );

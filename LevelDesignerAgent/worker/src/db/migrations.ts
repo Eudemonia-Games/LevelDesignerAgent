@@ -16,9 +16,7 @@ export async function runMigrations() {
         connectionString = dbUrl.replace(/([?&])channel_binding=[^&]+(&|$)/, '$1').replace(/&$/, '');
     }
 
-    // Handle sanitization for logging
-    const sanitizedUrl = connectionString.replace(/:[^:@]+@/, ":***@");
-    console.log(`Running migrations against ${sanitizedUrl}...`);
+    console.log(`Running migrations...`);
 
     const client = new Client({
         connectionString,

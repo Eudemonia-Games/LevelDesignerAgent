@@ -179,3 +179,37 @@ None.
 2. Deploy API.
 3. Deploy Web.
 4. Verify login flow.
+
+### LDA.1.4.0 - Admin UI Polish & Log Hygiene
+
+#### Plan
+Enhance the Admin Secrets UI for reliability and usability (copy button, status chips, session expiry handling), and harden log hygiene by removing database connection strings from API and Worker logs.
+
+#### Files changed
+- [MODIFY] shared/src/version.ts (LDA.1.4.0)
+- [MODIFY] api/src/db/migrations.ts (Sanitized logs)
+- [MODIFY] worker/src/db/migrations.ts (Sanitized logs)
+- [MODIFY] web/src/SecretsAdmin.tsx (Enhanced UI, copy btn, error handling)
+- [MODIFY] web/src/App.tsx (Session expiry handling)
+- [MODIFY] .env.example (Strict placeholders)
+- [NEW] notes/lda/LDA.1.4.0.md
+
+#### Mismatches
+None.
+
+#### Limitations
+- Web UI requires credentials: include for all API calls (implemented).
+
+#### How to verify in Repo Mode
+1. pnpm -r dev
+2. Login to Web. Go to Secrets.
+3. Verify UI elements (Copy btn, Status chips).
+4. Update a secret -> Verify success msg.
+5. Delete lda_session cookie -> Verify redirect to login.
+6. Check API/Worker logs -> No postgres:// URLs.
+
+#### How to verify in Render Mode
+1. Deploy.
+2. Login -> Secrets.
+3. Verify UX.
+4. Check Render logs for hygiene.
