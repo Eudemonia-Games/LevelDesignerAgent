@@ -5,24 +5,30 @@ import { FlowStageTemplate, Run } from '../db/types';
 export class OpenAIProvider implements ProviderAdapter {
     private static instance: OpenAIProvider | null = null;
     private client: OpenAI | null = null;
+    private apiKeyName: string = 'OPENAI_API_KEY';
 
-    constructor() {
-        if (process.env.OPENAI_API_KEY) {
-            this.client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-        } else {
-            console.warn("OPENAI_API_KEY not set. OpenAIProvider will fail if used.");
+    constructor(config: { apiKeyName?: string; baseURL?: string } = {}) {
+        this.apiKeyName = config.apiKeyName || 'OPENAI_API_KEY';
+        const apiKey = process.env[this.apiKeyName];
+
+        if (apiKey) {
+            this.client = new OpenAI({
+                apiKey: apiKey,
+                baseURL: config.baseURL
+            });
         }
     }
 
-    static getInstance(): OpenAIProvider {
-        if (!OpenAIProvider.instance) {
-            OpenAIProvider.instance = new OpenAIProvider();
-        }
-        return OpenAIProvider.instance;
+    static getInstance(config: { apiKeyName?: string; baseURL?: string } = {}): OpenAIProvider {
+        // Note: Singleton logic here is flawed if we want different configs for different providers.
+        // We should return new instances or map by config.
+        // For simplicity in this worker, we will just return new instance if config is passed, 
+        // OR we just register them as separate instances in index.ts and don't use getInstance() there.
+        return new OpenAIProvider(config);
     }
 
     async generateText(prompt: string, model: string = 'gpt-4o', options: any = {}): Promise<any> {
-        if (!this.client) throw new Error("OPENAI_API_KEY not configured");
+        if (!this.client) throw new Error(`${this.apiKeyName} not configured`);
 
         const completion = await this.client.chat.completions.create({
             model: model,
@@ -51,7 +57,7 @@ export class OpenAIProvider implements ProviderAdapter {
         const model = stage.model_id || 'gpt-4o';
         console.log(`[OpenAI] Calling ${model} for stage ${stage.stage_key}...`);
 
-        if (!this.client) throw new Error("OPENAI_API_KEY not configured");
+        if (!this.client) throw new Error(`${this.apiKeyName} not configured`);
 
         const options: any = {};
 

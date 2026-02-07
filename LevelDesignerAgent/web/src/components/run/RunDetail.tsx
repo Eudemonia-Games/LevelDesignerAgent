@@ -84,7 +84,15 @@ export function RunDetail({ runId, onClose }: RunDetailProps) {
                             <div style={{ fontWeight: 'bold' }}>{stage.stage_key} (Attempt {stage.attempt})</div>
                             <div>Status: {stage.status}</div>
                             {stage.output_json && Object.keys(stage.output_json).length > 0 && (
-                                <pre style={{ fontSize: '0.8em', background: '#eee', padding: '5px', overflowX: 'auto' }}>
+                                <pre style={{
+                                    fontSize: '0.8em',
+                                    background: '#1e1e1e',
+                                    color: '#d4d4d4',
+                                    padding: '5px',
+                                    overflowX: 'auto',
+                                    marginTop: '5px',
+                                    borderRadius: '4px'
+                                }}>
                                     {JSON.stringify(stage.output_json, null, 2)}
                                 </pre>
                             )}

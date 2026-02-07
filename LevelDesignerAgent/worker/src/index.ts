@@ -14,8 +14,11 @@ import { FalProvider } from './providers/fal';
 import { MeshyProvider } from './providers/meshy';
 import { InternalProvider } from './providers/internal';
 
-registerProvider('openai', new OpenAIProvider());
-registerProvider('gemini', new OpenAIProvider()); // Use OpenAI adapter for Gemini (compatible if base URL set)
+registerProvider('openai', new OpenAIProvider({ apiKeyName: 'OPENAI_API_KEY' }));
+registerProvider('gemini', new OpenAIProvider({
+    apiKeyName: 'GEMINI_API_KEY',
+    baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/'
+}));
 registerProvider('fal', new FalProvider());
 registerProvider('meshy', new MeshyProvider());
 registerProvider('rodin', new MeshyProvider()); // Alias for Phase 7
