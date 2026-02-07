@@ -31,6 +31,7 @@ export interface StageRun {
     output_json: any;
     produced_artifacts_json: any;
     error_json: any;
+    created_at: Date;
 }
 
 export interface RunEvent {

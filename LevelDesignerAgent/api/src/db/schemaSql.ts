@@ -283,4 +283,9 @@ CREATE TABLE IF NOT EXISTS jobs (
 
 CREATE INDEX IF NOT EXISTS jobs_status_idx ON jobs (status);
 CREATE INDEX IF NOT EXISTS jobs_created_at_idx ON jobs (created_at ASC);
+
+-- Backfill/Migration Fixes
+DO $$ BEGIN
+  ALTER TABLE stage_runs ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT now();
+EXCEPTION WHEN duplicate_column THEN NULL; END $$;
 `;
