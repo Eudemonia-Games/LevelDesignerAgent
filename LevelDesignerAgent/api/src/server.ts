@@ -38,11 +38,7 @@ export const buildServer = async () => {
         parseOptions: {}
     });
 
-    // Global Route Guard
-    server.addHook('onRoute', (routeOptions) => {
-        // We can't easily hook per-route here without more complex logic or a plugin.
-        // Instead, let's use onRequest.
-    });
+
 
     server.addHook('onRequest', async (req, reply) => {
         // Public Routes
