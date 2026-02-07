@@ -1,21 +1,35 @@
 {
-    "name": "@lda/worker",
-    "version": "0.1.0",
-    "scripts": {
-        "build": "tsc",
-        "dev": "pnpm -C ../shared build && tsx watch src/index.ts",
-        "start": "node dist/index.js",
-        "lint": "eslint src --ext .ts",
-        "typecheck": "tsc --noEmit"
-    },
-    "dependencies": {
-        "@lda/shared": "workspace:*",
-        "pg": "^8.18.0"
-    },
-    "devDependencies": {
-        "tsx": "^4.7.0",
-        "@types/node": "^20.11.0",
-        "typescript": "^5.3.3",
-        "@types/pg": "^8.11.0"
-    }
+    "name":  "@lda/worker",
+    "version":  "1.0.0",
+    "scripts":  {
+                    "build":  "tsc",
+                    "dev":  "pnpm -C ../shared build \u0026\u0026 tsx watch src/index.ts",
+                    "start":  "node dist/index.js",
+                    "lint":  "eslint src --ext .ts",
+                    "typecheck":  "tsc --noEmit"
+                },
+    "dependencies":  {
+                         "@aws-sdk/client-s3":  "^3.985.0",
+                         "@aws-sdk/s3-request-presigner":  "^3.985.0",
+                         "@fal-ai/serverless-client":  "^0.15.0",
+                         "@gltf-transform/core":  "^4.3.0",
+                         "@gltf-transform/extensions":  "^4.3.0",
+                         "@gltf-transform/functions":  "^4.3.0",
+                         "@google/generative-ai":  "^0.24.1",
+                         "@lda/shared":  "workspace:*",
+                         "draco3dgltf":  "^1.5.7",
+                         "handlebars":  "^4.7.8",
+                         "mime-types":  "^3.0.2",
+                         "openai":  "^6.18.0",
+                         "pg":  "^8.18.0"
+                     },
+    "devDependencies":  {
+                            "@types/mime-types":  "^3.0.1",
+                            "@types/node":  "^20.11.0",
+                            "@types/node-fetch":  "^2.6.13",
+                            "@types/pg":  "^8.11.0",
+                            "node-fetch":  "^3.3.2",
+                            "tsx":  "^4.7.0",
+                            "typescript":  "^5.3.3"
+                        }
 }

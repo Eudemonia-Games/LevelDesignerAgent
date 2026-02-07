@@ -1,6 +1,7 @@
 {
   "name": "level-designer-agent-monorepo",
   "private": true,
+  "version": "1.0.0",
   "scripts": {
     "build": "pnpm -r build",
     "build:web": "pnpm --filter @lda/shared build && pnpm --filter @lda/web build",

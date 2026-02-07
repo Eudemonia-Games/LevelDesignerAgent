@@ -1,0 +1,105 @@
+import { useState, useEffect } from 'react';
+import { fetchApi } from '../../api';
+import { Run, StageRun, RunEvent } from '@lda/shared';
+
+interface RunDetailProps {
+    runId: string;
+    onClose: () => void;
+}
+
+export function RunDetail({ runId, onClose }: RunDetailProps) {
+    const [run, setRun] = useState<Run | null>(null);
+    const [stages, setStages] = useState<StageRun[]>([]);
+    const [events, setEvents] = useState<RunEvent[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    const loadData = async () => {
+        try {
+            const [runData, stageData, eventData] = await Promise.all([
+                fetchApi(`/api/v1/runs/${runId}`),
+                fetchApi(`/api/v1/runs/${runId}/stages`),
+                fetchApi(`/api/v1/runs/${runId}/events`)
+            ]);
+            setRun(runData.run);
+            setStages(stageData.stages);
+            setEvents(eventData.events);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    useEffect(() => {
+        setLoading(true);
+        loadData().finally(() => setLoading(false));
+
+        const interval = setInterval(loadData, 2000); // Poll every 2s
+        return () => clearInterval(interval);
+    }, [runId]);
+
+    if (!run && loading) return <div>Loading detail...</div>;
+    if (!run) return <div>Run not found</div>;
+
+    return (
+        <div style={{ padding: '20px', height: '100%', overflowY: 'auto', background: 'white' }}>
+            <button onClick={onClose} style={{ marginBottom: '10px' }}>&larr; Back</button>
+
+            <div style={{ marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
+                <h2>{run.user_prompt}</h2>
+                <div>
+                    Status: <strong>{run.status}</strong> <br />
+                    ID: <span style={{ fontFamily: 'monospace' }}>{run.id}</span>
+                </div>
+                {run.error_summary && (
+                    <div style={{ color: 'red', marginTop: '10px' }}>
+                        Error: {run.error_summary}
+                    </div>
+                )}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                {/* Timeline / Stages */}
+                <div>
+                    <h3>Stages</h3>
+                    {stages.length === 0 && <div>No stages yet.</div>}
+                    {stages.map(stage => (
+                        <div key={stage.id} style={{
+                            padding: '10px', marginBottom: '10px', border: '1px solid #ddd',
+                            borderRadius: '4px', background: stage.status === 'running' ? '#e6f7ff' :
+                                stage.status === 'succeeded' ? '#f6ffed' :
+                                    stage.status === 'failed' ? '#fff1f0' : 'white'
+                        }}>
+                            <div style={{ fontWeight: 'bold' }}>{stage.stage_key} (Attempt {stage.attempt})</div>
+                            <div>Status: {stage.status}</div>
+                            {stage.output_json && Object.keys(stage.output_json).length > 0 && (
+                                <pre style={{ fontSize: '0.8em', background: '#eee', padding: '5px', overflowX: 'auto' }}>
+                                    {JSON.stringify(stage.output_json, null, 2)}
+                                </pre>
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Events Log */}
+                <div>
+                    <h3>Events</h3>
+                    <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #eee', padding: '10px' }}>
+                        {events.map(ev => (
+                            <div key={ev.id} style={{ marginBottom: '5px', fontSize: '0.9em' }}>
+                                <span style={{ color: '#888' }}>{new Date(ev.created_at).toLocaleTimeString()}</span>
+                                {' '}
+                                <span style={{
+                                    fontWeight: 'bold',
+                                    color: ev.level === 'error' ? 'red' : ev.level === 'warn' ? 'orange' : 'black'
+                                }}>
+                                    [{ev.level.toUpperCase()}]
+                                </span>
+                                {' '}
+                                {ev.message}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}

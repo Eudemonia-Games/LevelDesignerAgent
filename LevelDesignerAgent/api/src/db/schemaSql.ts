@@ -131,6 +131,8 @@ CREATE TABLE IF NOT EXISTS flow_stage_templates (
 
   output_schema_json JSONB NOT NULL DEFAULT '{}'::jsonb,
 
+  routing_rules_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+
   breakpoint_after BOOLEAN NOT NULL DEFAULT false,
 
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -266,4 +268,19 @@ CREATE TABLE IF NOT EXISTS run_asset_links (
 );
 
 CREATE INDEX IF NOT EXISTS run_asset_links_run_idx ON run_asset_links (run_id);
+
+-- jobs (Generic background tasks)
+CREATE TABLE IF NOT EXISTS jobs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  type TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending', 
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  result JSONB NULL,
+  error TEXT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS jobs_status_idx ON jobs (status);
+CREATE INDEX IF NOT EXISTS jobs_created_at_idx ON jobs (created_at ASC);
 `;

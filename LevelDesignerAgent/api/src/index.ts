@@ -20,6 +20,7 @@ const start = async () => {
         await server.listen({ port, host: '0.0.0.0' });
         console.log(`API server listening on port ${port}`);
     } catch (err) {
+        console.error("❌ Failed to start server:", err);
         server.log.error(err);
         process.exit(1);
     }

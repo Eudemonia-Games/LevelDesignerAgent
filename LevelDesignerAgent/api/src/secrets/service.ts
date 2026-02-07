@@ -84,6 +84,7 @@ export const SecretsService = {
      * Sets (encrypts and upserts) a secret.
      */
     async setSecret(key: string, value: string): Promise<SecretItem> {
+        // ... (existing logic)
         if (!KNOWN_SECRETS.includes(key)) {
             throw new Error(`Unknown secret key: ${key}`);
         }
@@ -120,6 +121,35 @@ export const SecretsService = {
                 masked: maskSecret(trimmedValue),
                 updatedAt: res.rows[0].updated_at
             };
+        } finally {
+            await client.end();
+        }
+    },
+
+    /**
+     * Gets a decrypted secret value by key.
+     * Internal use only - never expose this directly via API.
+     */
+    async getDecryptedSecret(key: string): Promise<string | undefined> {
+        const dbUrl = process.env.DATABASE_URL;
+        if (!dbUrl) throw new Error("DB not configured");
+
+        const client = new Client(getDbConfig(dbUrl));
+
+        try {
+            await client.connect();
+            const res = await client.query(`
+                SELECT key, algo, ciphertext_base64, nonce_base64, tag_base64 
+                FROM secrets 
+                WHERE key = $1
+            `, [key]);
+
+            if (res.rows.length === 0) return undefined;
+
+            return decryptSecret(res.rows[0]);
+        } catch (e) {
+            console.error(`Failed to get/decrypt secret ${key}:`, e);
+            return undefined;
         } finally {
             await client.end();
         }

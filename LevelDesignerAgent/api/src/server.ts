@@ -3,7 +3,10 @@ import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
 import { APP_VERSION } from '@lda/shared';
 import { authRoutes, AuthService } from './auth';
-import { secretsRoutes } from './routes/secrets';
+import { assetsRoutes } from './routes/assets';
+import { runsRoutes } from './routes/runs';
+import { exportRoutes } from './routes/export';
+import { seedDefaults } from './db/seed';
 import { getDbConfig } from './db/utils';
 
 export const buildServer = async () => {
@@ -48,6 +51,9 @@ export const buildServer = async () => {
         if (req.url.startsWith('/health')) return;
         if (req.url === '/auth/login') return;
 
+        // Public Library Access
+        if (req.method === 'GET' && req.url.startsWith('/api/v1/assets')) return;
+
         // Check Auth
         const isAuthenticated = await AuthService.verifySession(req);
         if (!isAuthenticated) {
@@ -56,7 +62,19 @@ export const buildServer = async () => {
     });
 
     server.register(authRoutes);
-    server.register(secretsRoutes);
+    server.register(assetsRoutes);
+    server.register(runsRoutes);
+    server.register(exportRoutes);
+
+    // Admin / Test Routes
+    const { adminRoutes } = await import('./routes/admin');
+    server.register(adminRoutes);
+
+    server.addHook('onReady', async () => {
+        if (process.env.DATABASE_URL) {
+            await seedDefaults().catch(err => console.error("Seed failed:", err));
+        }
+    });
 
     server.get('/health', async () => {
         let dbStatus = "unknown";
@@ -73,11 +91,12 @@ export const buildServer = async () => {
                 const res = await client.query(`
                     SELECT 
                         to_regclass('auth_sessions') as auth,
-                        to_regclass('secrets') as secrets
+                        to_regclass('secrets') as secrets,
+                        to_regclass('flow_versions') as flows
                 `);
                 await client.end();
 
-                if (res.rows[0].auth && res.rows[0].secrets) {
+                if (res.rows[0].auth && res.rows[0].secrets && res.rows[0].flows) {
                     dbStatus = "ok";
                 } else {
                     dbStatus = "missing_tables";
