@@ -134,12 +134,12 @@ export const AuthService = {
             `, [tokenHash, expiresAt]);
 
             // Set Cookie
-            const isProd = process.env.NODE_ENV === 'production';
+
 
             res.setCookie(SESSION_COOKIE_NAME, rawToken, {
                 httpOnly: true,
-                secure: isProd, // Secure in production
-                sameSite: 'lax',
+                secure: true, // Must be true for sameSite: 'none'
+                sameSite: 'none',
                 path: '/',
                 signed: true,
                 expires: expiresAt
