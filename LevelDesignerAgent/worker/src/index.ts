@@ -7,6 +7,20 @@ console.log(`[Worker] Starting up... Version: ${APP_VERSION}`);
 
 import * as http from 'http';
 
+// Register Providers
+import { registerProvider } from './providers';
+import { OpenAIProvider } from './providers/openai';
+import { FalProvider } from './providers/fal';
+import { MeshyProvider } from './providers/meshy';
+import { InternalProvider } from './providers/internal';
+
+registerProvider('openai', new OpenAIProvider());
+registerProvider('gemini', new OpenAIProvider()); // Use OpenAI adapter for Gemini (compatible if base URL set)
+registerProvider('fal', new FalProvider());
+registerProvider('meshy', new MeshyProvider());
+registerProvider('rodin', new MeshyProvider()); // Alias for Phase 7
+registerProvider('internal', new InternalProvider());
+
 // Run DB migrations
 runMigrations().then(() => {
     startPoller();
