@@ -79,10 +79,11 @@ export class MeshyProvider implements ProviderAdapter {
         return JSON.parse(text);
     }
 
-    private async pollTask(pollUrl: string, apiKey: string, maxRetries = 180, intervalMs = 2000): Promise<MeshyTask> {
+    private async pollTask(pollUrl: string, apiKey: string, maxRetries = 300, intervalMs = 4000): Promise<MeshyTask> {
         for (let i = 0; i < maxRetries; i++) {
             await sleep(intervalMs);
             const task = await this.getJson(pollUrl, apiKey);
+            console.log(`[Meshy] Polling task... Status: ${task?.status || task?.result?.status} (Attempt ${i + 1}/${maxRetries})`);
 
             const status = task?.status || task?.result?.status;
             const data = task?.result || task;
