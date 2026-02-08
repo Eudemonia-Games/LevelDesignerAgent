@@ -226,9 +226,25 @@ export async function executeRun(run: Run) {
             console.log(`[Worker] Processing ${output._artifacts.length} artifacts from ${nextStage.stage_key}...`);
             for (const art of output._artifacts) {
                 try {
+                    // Map generic provider kinds to specific Schema Asset Kinds
+                    let correctKind = art.kind;
+                    if (art.kind === 'image') {
+                        if (nextStage.stage_key.includes('EXTERIOR_ANCHOR')) correctKind = 'anchor_exterior_image';
+                        else if (nextStage.stage_key.includes('INTERIOR_STYLE')) correctKind = 'anchor_interior_image';
+                        else if (nextStage.stage_key.includes('TILE_IMAGES')) correctKind = 'tile_image';
+                        else if (nextStage.stage_key.includes('PROP_IMAGES')) correctKind = 'prop_image';
+                        else if (nextStage.stage_key.includes('BOSS_IMAGE')) correctKind = 'boss_image';
+                        else if (nextStage.stage_key.includes('GRID_IMAGE')) correctKind = 'grid_image';
+                    } else if (art.kind === 'model3d') {
+                        if (nextStage.stage_key.includes('EXTERIOR')) correctKind = 'exterior_model_source';
+                        else if (nextStage.stage_key.includes('TILE')) correctKind = 'tile_model_source';
+                        else if (nextStage.stage_key.includes('PROP')) correctKind = 'prop_model_source';
+                        else if (nextStage.stage_key.includes('BOSS')) correctKind = 'boss_model_source';
+                    }
+
                     // Create Asset
                     const assetId = await createAsset({
-                        kind: art.kind,
+                        kind: correctKind,
                         slug: art.slug,
                         provider: nextStage.provider,
                         model_id: nextStage.model_id,
