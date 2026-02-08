@@ -1,6 +1,16 @@
 import { APP_VERSION } from '@lda/shared';
 import { runMigrations } from './db/migrations';
 
+// Global error handlers
+process.on('uncaughtException', (err) => {
+    console.error('FATAL: Uncaught Exception:', err);
+    // Give it a moment to flush logs?
+    process.exit(1);
+});
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('FATAL: Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 import { startPoller } from './orchestrator/poller';
 
 console.log(`[Worker] Starting up... Version: ${APP_VERSION}`);

@@ -36,16 +36,19 @@ export class GeminiProvider implements ProviderAdapter {
         try {
             const model = genAI.getGenerativeModel({ model: modelId });
 
-            // specific timeout to avoid worker hang/sigterm
-            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Gemini Request Timed Out (60s)")), 60000));
+            // specific timeout to avoid worker hang/sigterm (increased to 120s)
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Gemini Request Timed Out (120s)")), 120000));
 
+            console.log("[Gemini] Request sent, awaiting response...");
             const result: any = await Promise.race([
                 model.generateContent(prompt),
                 timeoutPromise
             ]);
+            console.log("[Gemini] Response received.");
 
             const response = await result.response;
             const text = response.text();
+            console.log(`[Gemini] Text extracted (Length: ${text.length}).`);
 
             // Try to parse JSON if it looks like JSON (common for tool outputs)
             let json_data = {};
