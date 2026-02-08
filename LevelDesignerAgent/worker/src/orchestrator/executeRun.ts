@@ -254,7 +254,9 @@ export async function executeRun(run: Run) {
 
                     // Upload File
                     // art.data is string or buffer.
-                    await createAssetFile(assetId, art.data, art.file_kind || art.kind, { mimeType: art.mime_type, fileExt: art.file_ext });
+                    // FIX: Use correctKind (which is valid asset_kind enum) instead of art.file_kind (which might be 'png')
+                    console.log(`[Worker] Uploading file for ${art.slug} (AssetID: ${assetId}). Kind: ${correctKind} (was ${art.file_kind})`);
+                    await createAssetFile(assetId, art.data, correctKind, { mimeType: art.mime_type, fileExt: art.file_ext });
 
                     producedArtifacts.push(assetId);
 
