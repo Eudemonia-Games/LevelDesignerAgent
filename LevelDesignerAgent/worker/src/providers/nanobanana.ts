@@ -13,16 +13,23 @@ function sleep(ms: number) {
 
 
 async function callGenerateContent(apiKey: string, modelId: string, prompt: string) {
+    console.log(`[NanoBanana] Generating prompt (len=${prompt.length}): ${prompt.slice(0, 100)}...`);
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
     const body = {
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: {
             // Ask explicitly for image output when supported
-            responseModalities: ['Image'],
+            responseModalities: ['image'], // Note: API expects lowercase 'image' usually, checking docs
             // Some models ignore this; harmless if unsupported
             imageConfig: { aspectRatio: '16:9' }
-        }
+        },
+        safetySettings: [
+            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
+        ]
     };
 
     const resp = await fetch(url, {
@@ -81,6 +88,7 @@ export class NanoBananaProvider implements ProviderAdapter {
 
                 if (artifacts.length === 0) {
                     const maybeText = cand?.content?.parts?.map((p: any) => p?.text).filter(Boolean).join('\n') || '';
+                    console.error("[NanoBanana] Raw Response:", JSON.stringify(json, null, 2));
                     throw new Error(`No inline images returned from ${modelId}. Text=${maybeText.slice(0, 500)}`);
                 }
 
