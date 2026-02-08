@@ -49,8 +49,16 @@ export class GeminiProvider implements ProviderAdapter {
 
             // Try to parse JSON if it looks like JSON (common for tool outputs)
             let json_data = {};
-            if (text.trim().startsWith('{')) {
-                try { json_data = JSON.parse(text); } catch (e) { }
+            let cleanText = text.trim();
+            // Remove markdown code blocks if present
+            if (cleanText.startsWith('```')) {
+                cleanText = cleanText.replace(/^```(json)?/, '').replace(/```$/, '').trim();
+            }
+
+            if (cleanText.startsWith('{')) {
+                try { json_data = JSON.parse(cleanText); } catch (e) {
+                    console.warn("[Gemini] Failed to parse JSON from response:", e);
+                }
             }
 
             return {
