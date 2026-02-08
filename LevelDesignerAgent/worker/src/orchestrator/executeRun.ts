@@ -223,6 +223,7 @@ export async function executeRun(run: Run) {
         // Handle Artifacts
         const producedArtifacts = [];
         if (output._artifacts && Array.isArray(output._artifacts)) {
+            console.log(`[Worker] Processing ${output._artifacts.length} artifacts from ${nextStage.stage_key}...`);
             for (const art of output._artifacts) {
                 try {
                     // Create Asset
@@ -244,6 +245,7 @@ export async function executeRun(run: Run) {
                     console.log(`[Worker] Artifact created: ${art.slug} (Asset ID: ${assetId})`);
                     await emitRunEvent(run.id, 'info', `Artifact created: ${art.slug}`, { asset_id: assetId });
                 } catch (err: any) {
+                    console.error(`[Worker] Failed to persist artifact ${art.slug}:`, err);
                     await emitRunEvent(run.id, 'error', `Failed to upload artifact ${art.slug}`, { error: err.message });
                 }
             }
